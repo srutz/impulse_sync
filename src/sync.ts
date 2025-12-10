@@ -4,10 +4,6 @@ import { PoolClient } from "pg";
 import { pool } from "./db";
 import { config, SyncTable } from "./config";
 
-if (!config) {
-  consola.fatal("Config not initialized");
-  process.exit(1);
-}
 
 export async function runAllSyncs() {
   consola.info("Starting full sync...");
