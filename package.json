@@ -1,0 +1,26 @@
+{
+  "name": "impulse_sync",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc src/main.ts",
+    "start": "node dist/main.js",
+    "dev": "npx tsx watch src/main.ts",
+    "lint": "npx @biomejs/biome lint",
+    "format": "npx @biomejs/biome format --write",
+    "fix": "npx @biomejs/check --write"
+  },
+  "author": "stepan rutz",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^25.0.0",
+    "@types/pg": "^8.16.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "consola": "^3.4.2",
+    "pg": "^8.16.3"
+  }
+}

@@ -1,0 +1,48 @@
+-- Create table with id bigserial primary key and modifiedAt timestamptz
+CREATE TABLE IF NOT EXISTS sales (
+    id BIGSERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    product VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10,2) NOT NULL,
+    total_amount NUMERIC(10,2) NOT NULL,
+    region VARCHAR(50) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    modified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Insert statements (id will be auto-generated, modifiedAt uses current timestamp)
+INSERT INTO sales (order_id, date, customer_name, product, category, quantity, unit_price, total_amount, region, payment_method, modified_at) VALUES
+(1001, '2024-01-15', 'John Smith', 'Laptop', 'Electronics', 1, 899.99, 899.99, 'North', 'Credit Card', '2024-01-15 10:23:45+00'),
+(1002, '2024-01-16', 'Sarah Johnson', 'Office Chair', 'Furniture', 2, 249.50, 499.00, 'South', 'PayPal', '2024-01-16 14:12:33+00'),
+(1003, '2024-01-18', 'Michael Brown', 'Wireless Mouse', 'Electronics', 3, 29.99, 89.97, 'East', 'Debit Card', '2024-01-18 09:45:22+00'),
+(1004, '2024-01-20', 'Emily Davis', 'Desk Lamp', 'Furniture', 1, 45.00, 45.00, 'West', 'Credit Card', '2024-01-20 16:34:11+00'),
+(1005, '2024-01-22', 'David Wilson', 'Monitor', 'Electronics', 1, 349.99, 349.99, 'North', 'Credit Card', '2024-01-22 11:28:56+00'),
+(1006, '2024-01-23', 'Lisa Anderson', 'Keyboard', 'Electronics', 2, 79.99, 159.98, 'South', 'PayPal', '2024-01-23 13:47:19+00'),
+(1007, '2024-01-25', 'James Martinez', 'Standing Desk', 'Furniture', 1, 599.00, 599.00, 'East', 'Credit Card', '2024-01-25 10:15:42+00'),
+(1008, '2024-01-28', 'Jennifer Taylor', 'Notebook Set', 'Stationery', 5, 12.99, 64.95, 'West', 'Debit Card', '2024-01-28 15:22:38+00'),
+(1009, '2024-02-01', 'Robert Garcia', 'Printer', 'Electronics', 1, 199.99, 199.99, 'North', 'Credit Card', '2024-02-01 09:33:27+00'),
+(1010, '2024-02-03', 'Maria Rodriguez', 'Pen Set', 'Stationery', 10, 8.50, 85.00, 'South', 'Cash', '2024-02-03 14:56:14+00'),
+(1011, '2024-02-05', 'William Lee', 'Webcam', 'Electronics', 1, 89.99, 89.99, 'East', 'PayPal', '2024-02-05 11:41:53+00'),
+(1012, '2024-02-08', 'Patricia White', 'Filing Cabinet', 'Furniture', 1, 179.99, 179.99, 'West', 'Credit Card', '2024-02-08 16:18:29+00'),
+(1013, '2024-02-10', 'Thomas Harris', 'USB Drive', 'Electronics', 4, 19.99, 79.96, 'North', 'Debit Card', '2024-02-10 10:52:37+00'),
+(1014, '2024-02-12', 'Linda Clark', 'Desk Organizer', 'Stationery', 3, 24.99, 74.97, 'South', 'Credit Card', '2024-02-12 13:25:48+00'),
+(1015, '2024-02-15', 'Christopher Lewis', 'Headphones', 'Electronics', 2, 149.99, 299.98, 'East', 'PayPal', '2024-02-15 09:37:16+00'),
+(1016, '2024-02-18', 'Barbara Walker', 'Whiteboard', 'Stationery', 1, 89.00, 89.00, 'West', 'Credit Card', '2024-02-18 15:44:52+00'),
+(1017, '2024-02-20', 'Daniel Hall', 'Tablet', 'Electronics', 1, 499.99, 499.99, 'North', 'Credit Card', '2024-02-20 11:09:23+00'),
+(1018, '2024-02-22', 'Nancy Allen', 'Bookshelf', 'Furniture', 1, 299.00, 299.00, 'South', 'Debit Card', '2024-02-22 14:31:45+00'),
+(1019, '2024-02-25', 'Matthew Young', 'Calculator', 'Stationery', 2, 34.99, 69.98, 'East', 'Cash', '2024-02-25 10:58:34+00'),
+(1020, '2024-02-28', 'Sandra King', 'External Hard Drive', 'Electronics', 1, 129.99, 129.99, 'West', 'PayPal', '2024-02-28 16:12:07+00'),
+(1021, '2024-03-02', 'Joseph Wright', 'Conference Chair', 'Furniture', 6, 189.99, 1139.94, 'North', 'Credit Card', '2024-03-02 09:46:28+00'),
+(1022, '2024-03-05', 'Betty Scott', 'Paper Shredder', 'Electronics', 1, 79.99, 79.99, 'South', 'Debit Card', '2024-03-05 13:54:19+00'),
+(1023, '2024-03-08', 'Ryan Green', 'Stapler Set', 'Stationery', 4, 15.99, 63.96, 'East', 'Cash', '2024-03-08 11:27:41+00'),
+(1024, '2024-03-10', 'Helen Adams', 'Monitor Stand', 'Furniture', 2, 49.99, 99.98, 'West', 'Credit Card', '2024-03-10 15:33:56+00'),
+(1025, '2024-03-13', 'Kevin Baker', 'Laptop Bag', 'Electronics', 1, 59.99, 59.99, 'North', 'PayPal', '2024-03-13 10:19:14+00'),
+(1026, '2024-03-15', 'Dorothy Nelson', 'Desk Pad', 'Stationery', 3, 19.99, 59.97, 'South', 'Credit Card', '2024-03-15 14:47:32+00'),
+(1027, '2024-03-18', 'Brian Carter', 'Ergonomic Keyboard', 'Electronics', 1, 129.99, 129.99, 'East', 'Debit Card', '2024-03-18 09:53:28+00'),
+(1028, '2024-03-20', 'Carol Mitchell', 'Table Lamp', 'Furniture', 2, 69.99, 139.98, 'West', 'Credit Card', '2024-03-20 16:08:45+00'),
+(1029, '2024-03-23', 'George Perez', 'Document Scanner', 'Electronics', 1, 249.99, 249.99, 'North', 'PayPal', '2024-03-23 11:36:17+00'),
+(1030, '2024-03-25', 'Ashley Roberts', 'Planner', 'Stationery', 5, 22.99, 114.95, 'South', 'Cash', '2024-03-25 13:21:59+00');
