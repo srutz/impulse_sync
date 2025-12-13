@@ -4,6 +4,7 @@ import { consola } from "consola";
 import { bootstrapConfig } from "./config";
 import { runAllSyncs } from "./sync";
 import { initDatabasePool } from "./db";
+import { exit } from "node:process";
 
 
 consola.box("****************** Impulse Sync ******************");
@@ -37,6 +38,7 @@ async function main() {
       async (argv) => {
         if (argv.action === "run") {
           await syncRun();
+          exit(0);
         }
       }
     )
