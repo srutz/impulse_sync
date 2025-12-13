@@ -27,6 +27,7 @@ export async function runAllSyncs() {
   } finally {
     client.release();
   }
+  consola.success("All syncs completed.");
 }
 
 
