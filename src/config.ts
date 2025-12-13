@@ -3,10 +3,14 @@ import { constants } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { consola } from "consola";
+import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
 export type SyncTable = {
   tableKey: string;
   query: string;
+  enabled: boolean
+  syncType: "full" | "timestamp" | "id_increment";
+  primaryKey: string;
 }
 
 export type Config = {
@@ -25,14 +29,11 @@ export type SyncMarkers = {
   markers: Record<string, string>
 }
 
-const CONFIG_DIR = join(homedir(), ".impulse_sync");
-const CONFIG_PATH = join(CONFIG_DIR, "config.json");
-const MARKERS_PATH = join(CONFIG_DIR, "sync_markers.json");
 
 let config: Config | null = null;
 let syncMarkers: SyncMarkers | null = null;
 
-export async function bootstrapConfig() {
+async function bootstrapConfig() {
   // Ensure directory exists
   await mkdir(CONFIG_DIR, { recursive: true });
 
@@ -65,19 +66,13 @@ export async function bootstrapConfig() {
     await writeFile(MARKERS_PATH, JSON.stringify(defaultMarkers, null, 2), "utf-8");
     consola.info(`Created default sync markers at ${MARKERS_PATH}.`);
   }
-
   config = await loadConfig(CONFIG_PATH);
-  syncMarkers = await loadSyncMarkers(MARKERS_PATH);
 }
 
-export async function loadConfig(path: string) {
+async function loadConfig(path: string) {
   const content = await readFile(path, "utf-8");
   return JSON.parse(content) as Config;
 }
 
-export async function loadSyncMarkers(path: string) {
-  const content = await readFile(path, "utf-8");
-  return JSON.parse(content) as SyncMarkers;
-}
 
-export { config, syncMarkers };
+export { bootstrapConfig, config };
