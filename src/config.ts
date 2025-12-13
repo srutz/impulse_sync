@@ -1,7 +1,5 @@
 import { readFile, writeFile, mkdir, access } from "fs/promises";
 import { constants } from "fs";
-import { homedir } from "os";
-import { join } from "path";
 import { consola } from "consola";
 import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
@@ -11,6 +9,7 @@ export type SyncTable = {
   enabled: boolean
   syncType: "full" | "timestamp" | "id_increment";
   primaryKey: string;
+  rowsPerSync?: number;
 }
 
 export type Config = {

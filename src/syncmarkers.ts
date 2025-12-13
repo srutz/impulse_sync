@@ -1,6 +1,6 @@
-
 import { readFile, writeFile, mkdir, access } from "fs/promises";
 import { MARKERS_PATH } from "./paths";
+import { consola } from "consola";
 
 export type SyncMarkers = {
   changedTs: string
@@ -30,6 +30,7 @@ async function setSyncMarker(tableKey: string, newMarker: string) {
     throw new Error("Sync markers not loaded");
   }
   syncMarkers.markers[tableKey] = newMarker;
+  consola.log("writing sync markers", MARKERS_PATH, syncMarkers);
   await saveSyncMarkers(MARKERS_PATH, syncMarkers);
 }
 

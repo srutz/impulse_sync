@@ -98,7 +98,8 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
     if (syncMarker) {
       params.push(syncMarker);
     }
-    const query = new QueryStream(table.query, params);
+    const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 10_000}`
+    const query = new QueryStream(finalQuery, params);
     consola.info(`Executing query for table: ${table.tableKey}`, table.query, params);
     const stream = client.query(query);
     now = new Date();
