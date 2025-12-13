@@ -141,14 +141,14 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       if (rowCount > 0) {
         const newMarker = now.toISOString();
         consola.info(`Updating sync marker for ${table.tableKey} to ${newMarker}`);
-        setSyncMarker(table.tableKey, newMarker);
+        await setSyncMarker(table.tableKey, newMarker);
       }
       break;
     case "id_increment":
       if (rowCount > 0) {
         const newMarker = maxId.toString();
         consola.info(`Updating sync marker for ${table.tableKey} to ${newMarker}`);
-        setSyncMarker(table.tableKey, newMarker);
+        await setSyncMarker(table.tableKey, newMarker);
       }
       break;
     case "full":
