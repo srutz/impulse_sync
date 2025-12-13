@@ -1,5 +1,4 @@
 
-import { consola } from "consola";
 
 // run the sync process for one table after the other
 

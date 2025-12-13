@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc src/main.ts",
+    "build": "tsc",
     "start": "node dist/main.js",
     "dev": "npx tsx watch src/main.ts",
     "lint": "npx @biomejs/biome lint",
@@ -21,8 +21,10 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@types/yargs": "^17.0.35",
     "consola": "^3.4.2",
     "pg": "^8.16.3",
-    "pg-query-stream": "^4.10.3"
+    "pg-query-stream": "^4.10.3",
+    "yargs": "^18.0.0"
   }
 }
