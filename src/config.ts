@@ -7,8 +7,9 @@ export type SyncTable = {
   tableKey: string;
   query: string;
   enabled: boolean
-  syncType: "full" | "timestamp" | "id_increment";
-  primaryKey: string;
+  syncType: "full" | "timestamp" | "primarykey";
+  primaryKey?: string;
+  timeStampColumn?: string;
   rowsPerSync?: number;
 }
 

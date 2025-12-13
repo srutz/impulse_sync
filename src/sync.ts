@@ -9,10 +9,11 @@ import { ParquetWriter, ParquetSchema } from "parquetjs";
 import { mkdir, readdir } from "fs/promises";
 import { join } from "path";
 import { FILES_DIR } from "./paths";
+import { exit } from "process";
 
 
 export async function runAllSyncs() {
-  consola.info("Starting full sync...");
+  consola.info("starting full sync...");
 
   const client = await pool!.connect();
   try {
@@ -20,26 +21,29 @@ export async function runAllSyncs() {
     const syncTables = config!.syncTables;
 
     for (const table of syncTables) {
-      const t0 = new Date().getTime();
-      consola.info(`Syncing table: ${table.tableKey}`);
-      await syncSingleTable(client, table);
-      const t1 = new Date().getTime();
-      const dt = t1 - t0;
-      consola.success(`Finished syncing table: ${table.tableKey} in ${(t1 - t0)}ms`);
+      if (table.enabled) {
+        const t0 = new Date().getTime();
+        consola.info(`sync "${table.tableKey}"`);
+        await syncSingleTable(client, table);
+        const t1 = new Date().getTime();
+        const dt = t1 - t0;
+        consola.success(`completed "${table.tableKey}" in ${(t1 - t0)}ms`);
+      } else {
+        consola.info(`skip "${table.tableKey}"`);
+      }
     }
   } finally {
     client.release();
   }
-  consola.success("All syncs completed.");
 }
 
 
 async function syncSingleTable(client: PoolClient, table: SyncTable) {
   if (!table.enabled) {
-    consola.info(`Skipping disabled sync: ${table.tableKey}`);
+    consola.info(`skipping disabled sync: "${table.tableKey}"`);
     return;
   }
-  consola.info(`Running sync: ${table.tableKey} with query: ${table.query}`);
+  //consola.info(`Running sync: ${table.tableKey} with query: ${table.query}`);
 
   let rowCount = 0;
 
@@ -54,17 +58,20 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
 
   //consola.info(`Writing to file: ${filePath}`);
 
-  let syncMarker = await getSyncMarker(table.tableKey);
-  if (!syncMarker) {
+  const params: any[] = [];
+  {
+    const syncMarker = await getSyncMarker(table.tableKey);
     switch (table.syncType) {
       case "full":
         /* do nothing, sync all rows */
         break;
       case "timestamp":
-        syncMarker = new Date(0).toISOString(); // 24 hours ago
+        const d = syncMarker ? new Date(syncMarker) : new Date(0)
+        params.push(d);
         break;
-      case "id_increment":
-        syncMarker = "0"; // Start from ID 0
+      case "primarykey":
+        const i = syncMarker ? Number.parseInt(syncMarker) : 0;
+        params.push(i);
         break;
       default:
         const exhaustiveCheck: never = table.syncType;
@@ -77,31 +84,30 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       consola.info(`Full sync`);
       break;
     case "timestamp":
-      consola.info(`Using sync marker (timestamp): ${syncMarker}`);
+      if (!table.timeStampColumn) {
+        throw new Error(`timeStampColumn is not defined for table ${table.tableKey}`);
+      }
       break;
-    case "id_increment":
-      consola.info(`Using sync marker (id_increment): ${syncMarker}`);
+    case "primarykey":
+      if (!table.primaryKey) {
+        throw new Error(`primaryKey is not defined for table ${table.tableKey}`);
+      }
       break;
     default:
       const exhaustiveCheck: never = table.syncType;
       throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
   }
 
-  let now = new Date();
+  let maxTime = new Date(0);
   let maxId = -1;
   let writer: ParquetWriter | null = null;
   let schema: ParquetSchema | null = null;
 
   try {
-    const params: any[] = [];
-    if (syncMarker) {
-      params.push(syncMarker);
-    }
-    const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 10_000}`
+    const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`
     const query = new QueryStream(finalQuery, params);
-    consola.info(`Executing query for table: ${table.tableKey}`, finalQuery, params);
+    consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
     const stream = client.query(query);
-    now = new Date();
 
     for await (const row of stream) {
       // Initialize schema and writer on first row
@@ -110,10 +116,24 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
         writer = await ParquetWriter.openFile(schema, filePath);
       }
 
-      if (table.syncType === "id_increment") {
-        const id = parseInt(row[table.primaryKey]);
+      if (table.syncType === "primarykey") {
+        const id = parseInt(row[table.primaryKey!]);
+        if (!Number.isInteger(id)) {
+          consola.fail(`Expected integer for primary key ${table.primaryKey}, got ${row[table.primaryKey!]}`);
+          exit(1);
+        }
         if (id > maxId) {
           maxId = id;
+        }
+      } else if (table.syncType === "timestamp") {
+        const ts = row[table.timeStampColumn!];
+        if (!(ts instanceof Date)) {
+          consola.fail(`Expected Date object for timestamp column ${table.timeStampColumn}, got ${typeof ts}`);
+          exit(1);
+        }
+        //console.log("ts =", ts, typeof ts);
+        if (ts > maxTime) {
+          maxTime = ts;
         }
       }
 
@@ -130,23 +150,22 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   } finally {
     if (writer) {
       await writer.close();
-      consola.info(`Wrote ${rowCount} rows to ${filePath}`);
+      consola.info(`wrote ${rowCount} rows to ${filePath}`);
     }
-    consola.info(`Completed sync for table: ${table.tableKey}`);
   }
 
   switch (table.syncType) {
     case "timestamp":
       if (rowCount > 0) {
-        const newMarker = now.toISOString();
-        consola.info(`Updating sync marker for ${table.tableKey} to ${newMarker}`);
+        const newMarker = maxTime.toISOString();
+        consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
         await setSyncMarker(table.tableKey, newMarker);
       }
       break;
-    case "id_increment":
+    case "primarykey":
       if (rowCount > 0) {
         const newMarker = maxId.toString();
-        consola.info(`Updating sync marker for ${table.tableKey} to ${newMarker}`);
+        consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
         await setSyncMarker(table.tableKey, newMarker);
       }
       break;
@@ -157,8 +176,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       const exhaustiveCheck: never = table.syncType;
       throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
   }
-
-  consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
+  //consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
 }
 
 /**

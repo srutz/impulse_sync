@@ -24,14 +24,15 @@ export async function tableReset(tableName: string) {
       for (const file of parquetFiles) {
         const filePath = join(tableFilesDirectory, file);
         await unlink(filePath);
-        consola.info(`Deleted file: ${filePath}`);
+        consola.info(`deleted file: ${filePath}`);
       }
     }
-    consola.success(`Reset completed for table: ${tableName}`);
+    consola.success(`reset completed for table: ${tableName}`);
     await setSyncMarker(tableName, null);
   } catch (error) {
-    consola.error(`Error resetting table ${tableName}: ${error}`);
+    consola.error(`error resetting table ${tableName}: ${error}`);
   }
+  consola.log("");
 }
 
 export async function tableShow(tableName: string) {
