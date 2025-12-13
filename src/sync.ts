@@ -2,14 +2,13 @@
 import { consola } from "consola";
 import { PoolClient } from "pg";
 import { pool } from "./db";
-import { config, SyncTable } from "./config";
+import { config, loadConfig, SyncTable } from "./config";
 import QueryStream from "pg-query-stream";
 import { getSyncMarker, setSyncMarker } from "./syncmarkers";
 import { ParquetWriter, ParquetSchema } from "parquetjs";
 import { mkdir, readdir } from "fs/promises";
 import { join } from "path";
-import { LANDING_ZONE_DIR } from "./paths";
-
+import { FILES_DIR } from "./paths";
 
 
 export async function runAllSyncs() {
@@ -45,7 +44,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   let rowCount = 0;
 
   // Ensure landing zone directory exists
-  const tableLandingZone = join(LANDING_ZONE_DIR, table.tableKey);
+  const tableLandingZone = join(FILES_DIR, table.tableKey);
   await mkdir(tableLandingZone, { recursive: true });
 
   // Get next file number
@@ -53,7 +52,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   const fileName = `${nextFileNumber.toString().padStart(20, '0')}.parquet`;
   const filePath = join(tableLandingZone, fileName);
 
-  consola.info(`Writing to file: ${filePath}`);
+  //consola.info(`Writing to file: ${filePath}`);
 
   let syncMarker = await getSyncMarker(table.tableKey);
   if (!syncMarker) {
@@ -100,7 +99,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
     }
     const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 10_000}`
     const query = new QueryStream(finalQuery, params);
-    consola.info(`Executing query for table: ${table.tableKey}`, table.query, params);
+    consola.info(`Executing query for table: ${table.tableKey}`, finalQuery, params);
     const stream = client.query(query);
     now = new Date();
 

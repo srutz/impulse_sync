@@ -73,5 +73,11 @@ async function loadConfig(path: string) {
   return JSON.parse(content) as Config;
 }
 
+async function showConfig() {
+  const content = await loadConfig(CONFIG_PATH);
+  consola.info("Current Sync Table Configurations:");
+  consola.info(JSON.stringify(content.syncTables, null, 2));
+}
 
-export { bootstrapConfig, config };
+
+export { bootstrapConfig, config, loadConfig, showConfig };

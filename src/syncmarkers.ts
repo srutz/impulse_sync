@@ -14,7 +14,7 @@ async function loadSyncMarkers(path: string) {
   try {
     const content = await readFile(path, "utf-8");
     if (!content || content.trim() === "") {
-      // File is empty, return default structure
+      // File is empty, return default structureok
       return {
         changedTs: new Date().toISOString(),
         markers: {}
@@ -34,9 +34,7 @@ async function loadSyncMarkers(path: string) {
 async function saveSyncMarkers(path: string, markers: SyncMarkers) {
   markers.changedTs = new Date().toISOString();
   const content = JSON.stringify(markers, null, 2);
-  consola.log(`Saving sync markers to ${path}: ${content}`);
   await writeFile(path, content, "utf-8");
-  consola.success(`Sync markers saved successfully to ${path}`);
 }
 
 async function getSyncMarker(tableKey: string) {
@@ -46,13 +44,26 @@ async function getSyncMarker(tableKey: string) {
   return syncMarkers.markers[tableKey] || null;
 }
 
-async function setSyncMarker(tableKey: string, newMarker: string) {
+async function setSyncMarker(tableKey: string, newMarker?: string | null) {
   if (!syncMarkers) {
     syncMarkers = await loadSyncMarkers(MARKERS_PATH);
   }
-  syncMarkers.markers[tableKey] = newMarker;
-  consola.log("writing sync markers", MARKERS_PATH, syncMarkers);
+  if (newMarker === null || newMarker === undefined) {
+    delete syncMarkers.markers[tableKey];
+  } else {
+    syncMarkers.markers[tableKey] = newMarker;
+  }
   await saveSyncMarkers(MARKERS_PATH, syncMarkers);
 }
 
-export { getSyncMarker, setSyncMarker };
+async function showSyncMarkers() {
+  if (!syncMarkers) {
+    syncMarkers = await loadSyncMarkers(MARKERS_PATH);
+  }
+  consola.info("Current Sync Markers:");
+  for (const [tableKey, marker] of Object.entries(syncMarkers.markers)) {
+    consola.info(`- ${tableKey}: ${marker}`);
+  }
+}
+
+export { showSyncMarkers, getSyncMarker, setSyncMarker };

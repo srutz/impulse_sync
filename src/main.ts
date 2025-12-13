@@ -1,13 +1,17 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { consola } from "consola";
-import { bootstrapConfig } from "./config";
+import { bootstrapConfig, showConfig } from "./config";
 import { runAllSyncs } from "./sync";
 import { initDatabasePool } from "./db";
 import { exit } from "node:process";
+import { showSyncMarkers } from "./syncmarkers";
+import { tableReset, tableShow } from "./commands";
 
 
-consola.box("****************** Impulse Sync ******************");
+consola.log("Impulse Sync CLI");
+consola.log("(C) 2025 Stepan Rutz, all rights reserved.");
+consola.log("");
 
 
 async function syncRun() {
@@ -39,6 +43,55 @@ async function main() {
         if (argv.action === "run") {
           await syncRun();
           exit(0);
+        }
+      }
+    )
+    .command(
+      "show <action>",
+      "Show data",
+      (yargs) => {
+        return yargs.positional("action", {
+          describe: "Action to perform",
+          type: "string",
+          choices: ["markers", "config"],
+        });
+      },
+      async (argv) => {
+        if (argv.action === "markers") {
+          await showSyncMarkers();
+        } else if (argv.action === "config") {
+          await showConfig();
+        }
+      }
+    )
+    .command(
+      "table <action> [tableName]",
+      "Modify tables",
+      (yargs) => {
+        return yargs
+          .positional("action", {
+            describe: "Action to perform",
+            type: "string",
+            choices: ["reset", "show"],
+          })
+          .positional("tableName", {
+            describe: "Name of the table",
+            type: "string",
+          });
+      },
+      async (argv) => {
+        if (argv.action === "reset") {
+          if (!argv.tableName) {
+            consola.error("Table name is required for reset action");
+            exit(1);
+          }
+          await tableReset(argv.tableName as string);
+        } else if (argv.action === "show") {
+          if (!argv.tableName) {
+            consola.error("Table name is required for reset action");
+            exit(1);
+          }
+          await tableShow(argv.tableName as string);
         }
       }
     )
