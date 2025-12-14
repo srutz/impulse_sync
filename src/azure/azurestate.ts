@@ -5,7 +5,7 @@ import { isFile } from "../sync/util";
 export type AzureState = {
   workspaceId: string | null;
   mirroredDatabaseId: string | null;
-}
+};
 
 let azureState: AzureState | null = null;
 
@@ -40,4 +40,3 @@ async function saveAzureState(path: string, state: AzureState) {
   const content = JSON.stringify(state, null, 2);
   await writeFile(path, content, "utf-8");
 }
-

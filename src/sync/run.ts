@@ -6,6 +6,7 @@ import { consola } from "consola";
 import { ParquetSchema, ParquetWriter } from "parquetjs";
 import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
+import { uploadTableFile } from "../azure/fabric";
 import { config, type SyncTable } from "../config";
 import { FILES_DIR } from "../paths";
 import { pool } from "./db";
@@ -108,7 +109,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   let maxId = -1;
   let writer: ParquetWriter | null = null;
   let schema: ParquetSchema | null = null;
-
+  let success = false;
   try {
     const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`;
     const query = new QueryStream(finalQuery, params);
@@ -161,6 +162,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
     if (writer) {
       await writer.close();
       consola.info(`wrote ${rowCount} rows to ${filePath}`);
+      success = true;
     }
   }
 
@@ -186,6 +188,10 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       const exhaustiveCheck: never = table.syncType;
       throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
     }
+  }
+
+  if (success) {
+    await uploadTableFile(table.tableKey, filePath);
   }
   //consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
 }

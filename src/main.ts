@@ -2,12 +2,19 @@ import { exit } from "node:process";
 import { consola } from "consola";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import {
+  getMirroredDatabase,
+  getMirroredDatabases,
+  getWorkspace,
+  getWorkspaces,
+  setMirroredDatabase,
+  setWorkspace,
+} from "./azure/fabric";
 import { tableReset, tableShow } from "./commands";
 import { bootstrapConfig, showConfig } from "./config";
 import { initDatabasePool } from "./sync/db";
 import { runAllSyncs } from "./sync/run";
 import { showSyncMarkers } from "./sync/syncmarkers";
-import { getMirroredDatabases, getWorkspace, getWorkspaces, setWorkspace } from "./azure/fabric";
 
 async function syncRun() {
   await bootstrapConfig();
@@ -16,10 +23,10 @@ async function syncRun() {
   await runAllSyncs();
 }
 
-
 async function main() {
   await yargs(hideBin(process.argv))
-    .command("about",
+    .command(
+      "about",
       "Show about information",
       () => { },
       async () => {
@@ -27,7 +34,7 @@ async function main() {
         consola.log("Version: 1.0.0");
         consola.log("(c) Stepan Rutz 2025");
         console.log("");
-      }
+      },
     )
     .command(
       "sync <action>",
@@ -41,8 +48,13 @@ async function main() {
       },
       async (argv) => {
         if (argv.action === "run") {
-          await syncRun();
-          exit(0);
+          try {
+            await syncRun();
+            exit(0);
+          } catch (error) {
+            consola.error("Sync failed:", error);
+            exit(1);
+          }
         }
       },
     )
@@ -102,7 +114,11 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: ["list", "set", "get", "showmirroreddatabases"],
+          choices: [
+            "list",
+            "set",
+            "get",
+          ],
         });
       },
       async (argv) => {
@@ -118,9 +134,72 @@ async function main() {
         } else if (argv.action === "get") {
           const workspaceId = await getWorkspace();
           consola.log({ workspaceId });
-        } else if (argv.action === "showmirroreddatabases") {
+        } else if (argv.action === "listmirroreddatabases") {
           const mirroredDatabases = await getMirroredDatabases();
           consola.log(JSON.stringify(mirroredDatabases, null, 2));
+        } else if (argv.action === "setmirroreddatabase") {
+          if (!argv.workspaceId) {
+            consola.error(
+              "a set workspaceId is required for setmirroreddatabase action",
+            );
+            exit(1);
+          }
+          await setMirroredDatabase(argv.mirroredDatabase as string);
+        } else if (argv.action === "getmirroreddatabase") {
+          if (!argv.workspaceId) {
+            consola.error(
+              "a set workspaceId is required for getmirroreddatabase action",
+            );
+            exit(1);
+          }
+          const mirroredDatabase = await getMirroredDatabase();
+          consola.log({ mirroredDatabase });
+        }
+      },
+    )
+    .command(
+      "mirroreddatabase <action> [databaseId]",
+      "Manage workspaces",
+      (yargs) => {
+        return yargs.positional("action", {
+          describe: "Action to perform",
+          type: "string",
+          choices: [
+            "list",
+            "set",
+            "get",
+          ],
+        });
+      },
+      async (argv) => {
+        if (argv.action === "list") {
+          const mirroredDatabases = await getMirroredDatabases();
+          consola.log(JSON.stringify(mirroredDatabases, null, 2));
+        } else if (argv.action === "set") {
+          const workspaceId = await getWorkspace();
+          if (!workspaceId) {
+            consola.error(
+              "a set workspaceId has to be set before settting the mirrored-database",
+            );
+            exit(1);
+          }
+          if (!argv.databaseId) {
+            consola.error(
+              "a mirroreddatabaseId is required as argument for setmirroreddatabase action",
+            );
+            exit(1);
+          }
+          await setMirroredDatabase(argv.databaseId as string);
+        } else if (argv.action === "get") {
+          const workspaceId = await getWorkspace();
+          if (!workspaceId) {
+            consola.error(
+              "a set workspaceId is required for getmirroreddatabase action",
+            );
+            exit(1);
+          }
+          const mirroredDatabase = await getMirroredDatabase();
+          consola.log({ mirroredDatabase });
         }
       },
     )

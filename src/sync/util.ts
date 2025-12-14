@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises";
+import { stat, readFile } from "node:fs/promises";
 
 export async function isDirectory(path: string) {
   try {
@@ -23,3 +23,9 @@ export async function isFile(path: string) {
   }
   return false;
 }
+
+export async function readBinaryFile(path: string) {
+  const f = await readFile(path);
+  return f;
+}
+
