@@ -92,63 +92,75 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
   const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
   const baseUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/${filename}`;
 
-  // Step 1: Create the file path
-  //consola.info(`creating file path for ${tableKey}/${filename}`);
-  const createResponse = await fetch(`${baseUrl}?resource=file`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "x-ms-version": "2020-02-10",
-      "Content-Length": "0",
-    },
-  });
 
-  if (!createResponse.ok) {
-    throw new Error(
-      `failed to create file: ${createResponse.status} ${await createResponse.text()}`,
-    );
+  // do this a few times, since there could be timeouts for large files
+  const attempts = 10;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      // Step 1: Create the file path
+      //consola.info(`creating file path for ${tableKey}/${filename}`);
+      const createResponse = await fetch(`${baseUrl}?resource=file`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "x-ms-version": "2020-02-10",
+          "Content-Length": "0",
+        },
+      });
+
+      if (!createResponse.ok) {
+        throw new Error(
+          `failed to create file: ${createResponse.status} ${await createResponse.text()}`,
+        );
+      }
+      // Step 2: Append data to the file
+      consola.info(`uploading ${buffer.length} bytes to ${tableKey}/${filename}`);
+      const appendResponse = await fetch(`${baseUrl}?action=append&position=0`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "x-ms-version": "2020-02-10",
+          "Content-Type": "application/octet-stream",
+          "Content-Length": buffer.length.toString(),
+        },
+        body: buffer,
+      });
+      if (!appendResponse.ok) {
+        throw new Error(
+          `failed to append data: ${appendResponse.status} ${await appendResponse.text()}`,
+        );
+      }
+      // Step 3: Flush the file (finalize)
+      //consola.info(`finalizing upload for ${tableKey}/${filename}`);
+      const flushResponse = await fetch(
+        `${baseUrl}?action=flush&position=${buffer.length}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "x-ms-version": "2020-02-10",
+            "Content-Length": "0",
+          },
+        },
+      );
+
+      if (!flushResponse.ok) {
+        throw new Error(
+          `Failed to flush file: ${flushResponse.status} ${await flushResponse.text()}`,
+        );
+      }
+
+      break; // success, exit loop
+    } catch (error) {
+      if (attempt === attempts) {
+        throw new Error(`failed to upload file after ${attempts} attempts: ${error}`);
+      }
+      const delay = attempt * 2000; // exponential backoff
+      consola.warn(`attempt ${attempt} failed, retrying in ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
   }
-
-  // Step 2: Append data to the file
-  consola.info(`uploading ${buffer.length} bytes to ${tableKey}/${filename}`);
-  const appendResponse = await fetch(`${baseUrl}?action=append&position=0`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "x-ms-version": "2020-02-10",
-      "Content-Type": "application/octet-stream",
-      "Content-Length": buffer.length.toString(),
-    },
-    body: buffer,
-  });
-
-  if (!appendResponse.ok) {
-    throw new Error(
-      `Failed to append data: ${appendResponse.status} ${await appendResponse.text()}`,
-    );
-  }
-
-  // Step 3: Flush the file (finalize)
-  //consola.info(`finalizing upload for ${tableKey}/${filename}`);
-  const flushResponse = await fetch(
-    `${baseUrl}?action=flush&position=${buffer.length}`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "x-ms-version": "2020-02-10",
-        "Content-Length": "0",
-      },
-    },
-  );
-
-  if (!flushResponse.ok) {
-    throw new Error(
-      `Failed to flush file: ${flushResponse.status} ${await flushResponse.text()}`,
-    );
-  }
-
-  consola.success(`Successfully uploaded ${filename} to ${tableKey}`);
+  consola.success(`uploaded ${filename} to ${tableKey}`);
 }
 
 /**
