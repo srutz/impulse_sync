@@ -19,7 +19,7 @@ import { showSyncMarkers } from "./sync/syncmarkers";
 async function syncRun() {
   await bootstrapConfig();
   await initDatabasePool();
-  consola.success("sync initialized successfully.");
+  //consola.success("sync initialized successfully.");
   await runAllSyncs();
 }
 

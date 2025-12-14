@@ -6,7 +6,11 @@ import { consola } from "consola";
 import { ParquetSchema, ParquetWriter } from "parquetjs";
 import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
-import { uploadTableFile } from "../azure/fabric";
+import {
+  createMetadataFile,
+  metadataExists,
+  uploadTableFile,
+} from "../azure/fabric";
 import { config, type SyncTable } from "../config";
 import { FILES_DIR } from "../paths";
 import { pool } from "./db";
@@ -191,6 +195,16 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   }
 
   if (success) {
+    // Ensure metadata file exists before uploading data
+    const hasMetadata = await metadataExists(table.tableKey);
+    if (!hasMetadata) {
+      consola.info(
+        `Creating _metadata.json for table ${table.tableKey} (first sync)`,
+      );
+      const keyColumns = getKeyColumns(table);
+      await createMetadataFile(table.tableKey, keyColumns);
+    }
+
     await uploadTableFile(table.tableKey, filePath);
   }
   //consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
@@ -223,9 +237,7 @@ async function getNextFileNumber(tableFilesDirectory: string) {
   }
 }
 
-/**
- * Creates a Parquet schema from a sample row
- */
+/** Parquet schema from a sample row */
 function createSchemaFromRow(row: any): ParquetSchema {
   const fields: Record<string, any> = {};
 
@@ -250,4 +262,13 @@ function createSchemaFromRow(row: any): ParquetSchema {
   fields.__rowMarker__ = { type: "INT32" };
 
   return new ParquetSchema(fields);
+}
+
+function getKeyColumns(table: SyncTable): string[] {
+  if (!table.primaryKey) {
+    throw new Error(
+      `primaryKey is not defined for table ${table.tableKey}`,
+    );
+  }
+  return [table.primaryKey];
 }

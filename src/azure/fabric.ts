@@ -150,3 +150,117 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
 
   consola.success(`Successfully uploaded ${filename} to ${tableKey}`);
 }
+
+/**
+ * Checks if _metadata.json exists for the given table
+ */
+export async function metadataExists(tableKey: string): Promise<boolean> {
+  const state = await getAzureState();
+  const workspaceId = state.workspaceId;
+  const mirroredDatabaseId = state.mirroredDatabaseId;
+  if (!workspaceId || !mirroredDatabaseId) {
+    throw new Error(
+      "workspaceId or mirroredDatabaseId is not set. Please set them first.",
+    );
+  }
+
+  const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
+  const metadataUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/_metadata.json`;
+
+  try {
+    const response = await fetch(metadataUrl, {
+      method: "HEAD",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-ms-version": "2020-02-10",
+      },
+    });
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Creates and uploads the _metadata.json file for a table
+ * @param tableKey - The table identifier
+ * @param keyColumns - Array of column names that form the primary key
+ */
+export async function createMetadataFile(
+  tableKey: string,
+  keyColumns: string[],
+) {
+  const state = await getAzureState();
+  const workspaceId = state.workspaceId;
+  const mirroredDatabaseId = state.mirroredDatabaseId;
+  if (!workspaceId || !mirroredDatabaseId) {
+    throw new Error(
+      "workspaceId or mirroredDatabaseId is not set. Please set them first.",
+    );
+  }
+
+  // Create metadata JSON
+  const metadata = { keyColumns };
+  const metadataContent = JSON.stringify(metadata);
+  const metadataBuffer = Buffer.from(metadataContent, "utf-8");
+
+  const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
+  const baseUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/_metadata.json`;
+
+  // Step 1: Create the file path
+  const createResponse = await fetch(`${baseUrl}?resource=file`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-ms-version": "2020-02-10",
+      "Content-Length": "0",
+    },
+  });
+
+  if (!createResponse.ok) {
+    throw new Error(
+      `Failed to create metadata file: ${createResponse.status} ${await createResponse.text()}`,
+    );
+  }
+
+  // Step 2: Append data to the file
+  const appendResponse = await fetch(`${baseUrl}?action=append&position=0`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-ms-version": "2020-02-10",
+      "Content-Type": "application/json",
+      "Content-Length": metadataBuffer.length.toString(),
+    },
+    body: metadataBuffer,
+  });
+
+  if (!appendResponse.ok) {
+    throw new Error(
+      `Failed to append metadata: ${appendResponse.status} ${await appendResponse.text()}`,
+    );
+  }
+
+  // Step 3: Flush the file (finalize)
+  const flushResponse = await fetch(
+    `${baseUrl}?action=flush&position=${metadataBuffer.length}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-ms-version": "2020-02-10",
+        "Content-Length": "0",
+      },
+    },
+  );
+
+  if (!flushResponse.ok) {
+    throw new Error(
+      `Failed to flush metadata file: ${flushResponse.status} ${await flushResponse.text()}`,
+    );
+  }
+
+  consola.success(
+    `Created _metadata.json for ${tableKey} with keyColumns: ${keyColumns.join(", ")}`,
+  );
+}
