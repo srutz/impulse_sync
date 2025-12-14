@@ -1,5 +1,5 @@
-import { consola } from "consola";
 import { readFile, writeFile } from "node:fs/promises";
+import { consola } from "consola";
 import { MARKERS_PATH } from "../paths";
 
 export type SyncMarkers = {
@@ -20,7 +20,7 @@ async function loadSyncMarkers(path: string) {
       };
     }
     return JSON.parse(content) as SyncMarkers;
-  } catch (error) {
+  } catch (_error) {
     // If file doesn't exist or is corrupted, return default
     consola.warn(`Could not load sync markers from ${path}, using defaults`);
     return {

@@ -1,6 +1,6 @@
-import { consola } from "consola";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { consola } from "consola";
 import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
 export type SyncTable = {

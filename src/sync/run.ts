@@ -1,10 +1,11 @@
-import { consola } from "consola";
+/** biome-ignore-all lint/suspicious/noExplicitAny: because */
 import { mkdir, readdir } from "node:fs/promises";
-import { ParquetSchema, ParquetWriter } from "parquetjs";
 import { join } from "node:path";
+import { exit } from "node:process";
+import { consola } from "consola";
+import { ParquetSchema, ParquetWriter } from "parquetjs";
 import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
-import { exit } from "node:process";
 import { config, type SyncTable } from "../config";
 import { FILES_DIR } from "../paths";
 import { pool } from "./db";
@@ -68,7 +69,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
         break;
       }
       case "primarykey": {
-        const i = syncMarker ? Number.parseInt(syncMarker) : 0;
+        const i = syncMarker ? Number.parseInt(syncMarker, 10) : 0;
         params.push(i);
         break;
       }
@@ -122,7 +123,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       }
 
       if (table.syncType === "primarykey") {
-        const id = parseInt(row[table.primaryKey!]);
+        const id = parseInt(row[table.primaryKey!], 10);
         if (!Number.isInteger(id)) {
           consola.fail(
             `Expected integer for primary key ${table.primaryKey}, got ${row[table.primaryKey!]}`,
