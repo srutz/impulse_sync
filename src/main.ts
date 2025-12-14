@@ -122,7 +122,6 @@ async function main() {
           const mirroredDatabases = await getMirroredDatabases();
           consola.log(JSON.stringify(mirroredDatabases, null, 2));
         }
-
       },
     )
     .demandCommand(1, "You need to specify a command")
