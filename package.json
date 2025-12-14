@@ -6,6 +6,7 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "dev": "npx tsx watch src/main.ts",
+    "check": "npx tsc --noEmit",
     "lint": "npx @biomejs/biome lint",
     "format": "npx @biomejs/biome format --write",
     "fix": "npx @biomejs/check --write"
