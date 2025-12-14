@@ -1,5 +1,5 @@
 import { readFile, writeFile, mkdir, access } from "fs/promises";
-import { MARKERS_PATH } from "./paths";
+import { MARKERS_PATH } from "../paths";
 import { consola } from "consola";
 
 export type SyncMarkers = {

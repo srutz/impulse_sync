@@ -1,11 +1,11 @@
 import { consola } from "consola";
 import { loadConfig } from "./config";
-import { getSyncMarker, setSyncMarker } from "./syncmarkers";
+import { getSyncMarker, setSyncMarker } from "./sync/syncmarkers";
 import { readdir } from "fs/promises";
 import { join } from "path";
 import { unlink } from "fs/promises";
 import { CONFIG_PATH, FILES_DIR } from "./paths";
-import { isDirectory } from "./util";
+import { isDirectory } from "./sync/util";
 
 
 

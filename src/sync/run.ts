@@ -2,13 +2,13 @@
 import { consola } from "consola";
 import { PoolClient } from "pg";
 import { pool } from "./db";
-import { config, loadConfig, SyncTable } from "./config";
+import { config, SyncTable } from "../config";
 import QueryStream from "pg-query-stream";
 import { getSyncMarker, setSyncMarker } from "./syncmarkers";
 import { ParquetWriter, ParquetSchema } from "parquetjs";
 import { mkdir, readdir } from "fs/promises";
 import { join } from "path";
-import { FILES_DIR } from "./paths";
+import { FILES_DIR } from "../paths";
 import { exit } from "process";
 
 

@@ -2,10 +2,10 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { consola } from "consola";
 import { bootstrapConfig, showConfig } from "./config";
-import { runAllSyncs } from "./sync";
-import { initDatabasePool } from "./db";
+import { runAllSyncs } from "./sync/run";
+import { initDatabasePool } from "./sync/db";
 import { exit } from "node:process";
-import { showSyncMarkers } from "./syncmarkers";
+import { showSyncMarkers } from "./sync/syncmarkers";
 import { tableReset, tableShow } from "./commands";
 
 

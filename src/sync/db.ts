@@ -3,7 +3,7 @@
 // run the sync process for one table after the other
 
 import { Pool } from "pg";
-import { config } from "./config";
+import { config } from "../config";
 
 let pool: Pool | null;
 
