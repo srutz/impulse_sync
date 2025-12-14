@@ -1,5 +1,9 @@
 import { consola } from "consola";
-import { AZURE_RESOURCE_FABRIC, getAccessToken } from "./accesstoken";
+import {
+  AZURE_RESOURCE_FABRIC,
+  AZURE_RESOURCE_STORAGE,
+  getAccessToken,
+} from "./accesstoken";
 import { getAzureState, setAzureState } from "./azurestate";
 import { readBinaryFile } from "../sync/util";
 
@@ -79,24 +83,70 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
       "workspaceId or mirroredDatabaseId is not set. Please set them first.",
     );
   }
-  const url = `https://api.fabric.microsoft.com/v1/workspaces/${workspaceId}/mirroredDatabases/${mirroredDatabaseId}/tables/${tableKey}/uploadFile`;
   // read file into binary buffer
   const buffer = await readBinaryFile(filePath);
 
+  // Extract filename from path
+  const filename = filePath.split('/').pop() || 'data.parquet';
+  // OneLake DFS operations require a storage token, not a Fabric API token
+  const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
+  const baseUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/${filename}`;
 
-  const response = await fetch(url, {
-    method: "POST",
+  // Step 1: Create the file path
+  //consola.info(`creating file path for ${tableKey}/${filename}`);
+  const createResponse = await fetch(`${baseUrl}?resource=file`, {
+    method: "PUT",
     headers: {
-      Authorization: `Bearer ${await getAccessToken(AZURE_RESOURCE_FABRIC)}`,
+      Authorization: `Bearer ${accessToken}`,
+      "x-ms-version": "2020-02-10",
+      "Content-Length": "0",
     },
-    body: fileStream,
   });
-  if (!response.ok) {
-    const errorText = await response.text();
+
+  if (!createResponse.ok) {
     throw new Error(
-      `Failed to upload table file: ${response.status} ${response.statusText} - ${errorText}`,
+      `failed to create file: ${createResponse.status} ${await createResponse.text()}`,
     );
-  } else {
-    consola.info(`uploaded file "${tableKey}" : "${filePath}" successfully.`);
   }
+
+  // Step 2: Append data to the file
+  consola.info(`uploading ${buffer.length} bytes to ${tableKey}/${filename}`);
+  const appendResponse = await fetch(`${baseUrl}?action=append&position=0`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-ms-version": "2020-02-10",
+      "Content-Type": "application/octet-stream",
+      "Content-Length": buffer.length.toString(),
+    },
+    body: buffer,
+  });
+
+  if (!appendResponse.ok) {
+    throw new Error(
+      `Failed to append data: ${appendResponse.status} ${await appendResponse.text()}`,
+    );
+  }
+
+  // Step 3: Flush the file (finalize)
+  //consola.info(`finalizing upload for ${tableKey}/${filename}`);
+  const flushResponse = await fetch(
+    `${baseUrl}?action=flush&position=${buffer.length}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-ms-version": "2020-02-10",
+        "Content-Length": "0",
+      },
+    },
+  );
+
+  if (!flushResponse.ok) {
+    throw new Error(
+      `Failed to flush file: ${flushResponse.status} ${await flushResponse.text()}`,
+    );
+  }
+
+  consola.success(`Successfully uploaded ${filename} to ${tableKey}`);
 }

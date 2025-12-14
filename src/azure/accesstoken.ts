@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 
 export const AZURE_RESOURCE_FABRIC = "https://api.fabric.microsoft.com";
+export const AZURE_RESOURCE_STORAGE = "https://storage.azure.com/";
 
 export type accessTokenCacheEntry = {
   token: string;
