@@ -21,6 +21,7 @@ export type Config = {
     password: string;
     database: string;
   };
+  delaySecondsBetweenSyncs?: number;  // default is 300 seconds
   syncTables: SyncTable[];
 };
 

@@ -177,6 +177,7 @@ export async function metadataExists(tableKey: string): Promise<boolean> {
     });
     return response.ok;
   } catch (error) {
+    consola.warn(`Error checking metadata for table ${tableKey}`, error);
     return false;
   }
 }

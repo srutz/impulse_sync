@@ -13,15 +13,9 @@ import {
 import { tableReset, tableShow } from "./commands";
 import { bootstrapConfig, showConfig } from "./config";
 import { initDatabasePool } from "./sync/db";
-import { runAllSyncs } from "./sync/run";
+import { runSyncLoop, runSyncsOnce } from "./sync/run";
 import { showSyncMarkers } from "./sync/syncmarkers";
 
-async function syncRun() {
-  await bootstrapConfig();
-  await initDatabasePool();
-  //consola.success("sync initialized successfully.");
-  await runAllSyncs();
-}
 
 async function main() {
   await yargs(hideBin(process.argv))
@@ -43,16 +37,27 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: ["run"],
+          choices: ["runloop", "onetime"],
         });
       },
       async (argv) => {
         if (argv.action === "run") {
+          await bootstrapConfig();
+          await initDatabasePool();
           try {
-            await syncRun();
+            await runSyncsOnce();
             exit(0);
           } catch (error) {
             consola.error("Sync failed:", error);
+            exit(1);
+          }
+        } else if (argv.action === "runloop") {
+          await bootstrapConfig();
+          await initDatabasePool();
+          try {
+            await runSyncLoop();
+          } catch (error) {
+            consola.error("Sync loop failed:", error);
             exit(1);
           }
         }

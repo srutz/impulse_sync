@@ -16,7 +16,22 @@ import { FILES_DIR } from "../paths";
 import { pool } from "./db";
 import { getSyncMarker, setSyncMarker } from "./syncmarkers";
 
-export async function runAllSyncs() {
+export async function runSyncLoop() {
+  const delaySeconds = config!.delaySecondsBetweenSyncs || 300;
+  while (true) {
+    try {
+      await runSyncsOnce();
+    } catch (error) {
+      consola.error("Error during sync loop:", error);
+    }
+    consola.info(`waiting ${delaySeconds} seconds before next sync...`);
+    await new Promise((resolve) =>
+      setTimeout(resolve, delaySeconds * 1_000)
+    );
+  }
+}
+
+export async function runSyncsOnce() {
   consola.info("starting full sync...");
 
   const client = await pool!.connect();
@@ -117,7 +132,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   try {
     const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`;
     const query = new QueryStream(finalQuery, params);
-    consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
+    //consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
     const stream = client.query(query);
 
     for await (const row of stream) {
@@ -151,15 +166,12 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
           maxTime = ts;
         }
       }
-
       // Add __rowMarker__ column with value 4 (Upsert) as the last column
       const rowWithMarker = { ...row, __rowMarker__: 4 };
-
       await writer!.appendRow(rowWithMarker);
       rowCount++;
-
-      if (rowCount % 1000 === 0) {
-        consola.info(`Processed ${rowCount} rows for table: ${table.tableKey}`);
+      if (rowCount % 5_000 === 0) {
+        consola.info(`processed ${rowCount} rows for table: ${table.tableKey}`);
       }
     }
   } finally {

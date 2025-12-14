@@ -29,3 +29,6 @@ export async function readBinaryFile(path: string) {
   return f;
 }
 
+export async function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
