@@ -1,5 +1,3 @@
-
-
 // run the sync process for one table after the other
 
 import { Pool } from "pg";

@@ -1,18 +1,15 @@
 import { consola } from "consola";
-import { loadConfig } from "./config";
-import { getSyncMarker, setSyncMarker } from "./sync/syncmarkers";
-import { readdir } from "fs/promises";
+import { readdir, unlink } from "fs/promises";
 import { join } from "path";
-import { unlink } from "fs/promises";
+import { loadConfig } from "./config";
 import { CONFIG_PATH, FILES_DIR } from "./paths";
+import { getSyncMarker, setSyncMarker } from "./sync/syncmarkers";
 import { isDirectory } from "./sync/util";
-
-
 
 export async function tableReset(tableName: string) {
   const tableFilesDirectory = join(FILES_DIR, tableName);
   const config = await loadConfig(CONFIG_PATH);
-  const table = config!.syncTables.find(t => t.tableKey === tableName);
+  const table = config!.syncTables.find((t) => t.tableKey === tableName);
   if (!table) {
     consola.error(`Table "${tableName}" not found in config.`);
     return;
@@ -20,7 +17,7 @@ export async function tableReset(tableName: string) {
   try {
     if (await isDirectory(tableFilesDirectory)) {
       const files = await readdir(tableFilesDirectory);
-      const parquetFiles = files.filter(f => f.endsWith('.parquet'));
+      const parquetFiles = files.filter((f) => f.endsWith(".parquet"));
       for (const file of parquetFiles) {
         const filePath = join(tableFilesDirectory, file);
         await unlink(filePath);
@@ -38,19 +35,19 @@ export async function tableReset(tableName: string) {
 export async function tableShow(tableName: string) {
   const tableFilesDirectory = join(FILES_DIR, tableName);
   const config = await loadConfig(CONFIG_PATH);
-  const table = config!.syncTables.find(t => t.tableKey === tableName);
+  const table = config!.syncTables.find((t) => t.tableKey === tableName);
   if (!table) {
     consola.error(`table "${tableName}" not found in config.`);
     return;
   }
-  const marker = await getSyncMarker(tableName)
+  const marker = await getSyncMarker(tableName);
   consola.info(`table: "${table.tableKey}", storage: ${tableFilesDirectory}`);
   consola.info(`  syncmarker = ${marker ? marker : "<none>"}`);
   let files: string[] = [];
   if (await isDirectory(tableFilesDirectory)) {
     files = await readdir(tableFilesDirectory);
   }
-  const parquetFiles = files.filter(f => f.endsWith('.parquet'));
+  const parquetFiles = files.filter((f) => f.endsWith(".parquet"));
   if (parquetFiles.length === 0) {
     consola.info("  no parquet files found.");
   } else {

@@ -1,16 +1,14 @@
-
 import { consola } from "consola";
-import { PoolClient } from "pg";
-import { pool } from "./db";
-import { config, SyncTable } from "../config";
-import QueryStream from "pg-query-stream";
-import { getSyncMarker, setSyncMarker } from "./syncmarkers";
-import { ParquetWriter, ParquetSchema } from "parquetjs";
 import { mkdir, readdir } from "fs/promises";
+import { ParquetSchema, ParquetWriter } from "parquetjs";
 import { join } from "path";
-import { FILES_DIR } from "../paths";
+import type { PoolClient } from "pg";
+import QueryStream from "pg-query-stream";
 import { exit } from "process";
-
+import { config, type SyncTable } from "../config";
+import { FILES_DIR } from "../paths";
+import { pool } from "./db";
+import { getSyncMarker, setSyncMarker } from "./syncmarkers";
 
 export async function runAllSyncs() {
   consola.info("starting full sync...");
@@ -27,7 +25,7 @@ export async function runAllSyncs() {
         await syncSingleTable(client, table);
         const t1 = new Date().getTime();
         const dt = t1 - t0;
-        consola.success(`completed "${table.tableKey}" in ${(t1 - t0)}ms`);
+        consola.success(`completed "${table.tableKey}" in ${t1 - t0}ms`);
       } else {
         consola.info(`skip "${table.tableKey}"`);
       }
@@ -36,7 +34,6 @@ export async function runAllSyncs() {
     client.release();
   }
 }
-
 
 async function syncSingleTable(client: PoolClient, table: SyncTable) {
   if (!table.enabled) {
@@ -53,7 +50,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
 
   // Get next file number
   const nextFileNumber = await getNextFileNumber(tableFilesDirectory);
-  const fileName = `${nextFileNumber.toString().padStart(20, '0')}.parquet`;
+  const fileName = `${nextFileNumber.toString().padStart(20, "0")}.parquet`;
   const filePath = join(tableFilesDirectory, fileName);
 
   //consola.info(`Writing to file: ${filePath}`);
@@ -65,17 +62,20 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       case "full":
         /* do nothing, sync all rows */
         break;
-      case "timestamp":
-        const d = syncMarker ? new Date(syncMarker) : new Date(0)
+      case "timestamp": {
+        const d = syncMarker ? new Date(syncMarker) : new Date(0);
         params.push(d);
         break;
-      case "primarykey":
+      }
+      case "primarykey": {
         const i = syncMarker ? Number.parseInt(syncMarker) : 0;
         params.push(i);
         break;
-      default:
+      }
+      default: {
         const exhaustiveCheck: never = table.syncType;
         throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
+      }
     }
   }
 
@@ -85,17 +85,22 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       break;
     case "timestamp":
       if (!table.timeStampColumn) {
-        throw new Error(`timeStampColumn is not defined for table ${table.tableKey}`);
+        throw new Error(
+          `timeStampColumn is not defined for table ${table.tableKey}`,
+        );
       }
       break;
     case "primarykey":
       if (!table.primaryKey) {
-        throw new Error(`primaryKey is not defined for table ${table.tableKey}`);
+        throw new Error(
+          `primaryKey is not defined for table ${table.tableKey}`,
+        );
       }
       break;
-    default:
+    default: {
       const exhaustiveCheck: never = table.syncType;
       throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
+    }
   }
 
   let maxTime = new Date(0);
@@ -104,7 +109,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   let schema: ParquetSchema | null = null;
 
   try {
-    const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`
+    const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`;
     const query = new QueryStream(finalQuery, params);
     consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
     const stream = client.query(query);
@@ -119,7 +124,9 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       if (table.syncType === "primarykey") {
         const id = parseInt(row[table.primaryKey!]);
         if (!Number.isInteger(id)) {
-          consola.fail(`Expected integer for primary key ${table.primaryKey}, got ${row[table.primaryKey!]}`);
+          consola.fail(
+            `Expected integer for primary key ${table.primaryKey}, got ${row[table.primaryKey!]}`,
+          );
           exit(1);
         }
         if (id > maxId) {
@@ -128,7 +135,9 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
       } else if (table.syncType === "timestamp") {
         const ts = row[table.timeStampColumn!];
         if (!(ts instanceof Date)) {
-          consola.fail(`Expected Date object for timestamp column ${table.timeStampColumn}, got ${typeof ts}`);
+          consola.fail(
+            `Expected Date object for timestamp column ${table.timeStampColumn}, got ${typeof ts}`,
+          );
           exit(1);
         }
         //console.log("ts =", ts, typeof ts);
@@ -172,9 +181,10 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
     case "full":
       /* no sync marker to update */
       break;
-    default:
+    default: {
       const exhaustiveCheck: never = table.syncType;
       throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
+    }
   }
   //consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
 }
@@ -185,14 +195,14 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
 async function getNextFileNumber(tableFilesDirectory: string) {
   try {
     const files = await readdir(tableFilesDirectory);
-    const parquetFiles = files.filter(f => f.endsWith('.parquet'));
+    const parquetFiles = files.filter((f) => f.endsWith(".parquet"));
 
     if (parquetFiles.length === 0) {
       return 1;
     }
 
     // Extract numbers from file names and find the max
-    const numbers = parquetFiles.map(f => {
+    const numbers = parquetFiles.map((f) => {
       const match = f.match(/^(\d+)\.parquet$/);
       return match ? parseInt(match[0], 10) : 0;
     });
@@ -214,24 +224,23 @@ function createSchemaFromRow(row: any): ParquetSchema {
 
   // Add fields from the row
   for (const [key, value] of Object.entries(row)) {
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       if (Number.isInteger(value)) {
-        fields[key] = { type: 'INT64', optional: true };
+        fields[key] = { type: "INT64", optional: true };
       } else {
-        fields[key] = { type: 'DOUBLE', optional: true };
+        fields[key] = { type: "DOUBLE", optional: true };
       }
-    } else if (typeof value === 'boolean') {
-      fields[key] = { type: 'BOOLEAN', optional: true };
+    } else if (typeof value === "boolean") {
+      fields[key] = { type: "BOOLEAN", optional: true };
     } else if (value instanceof Date) {
-      fields[key] = { type: 'TIMESTAMP_MILLIS', optional: true };
+      fields[key] = { type: "TIMESTAMP_MILLIS", optional: true };
     } else {
-      fields[key] = { type: 'UTF8', optional: true };
+      fields[key] = { type: "UTF8", optional: true };
     }
   }
 
   // Add __rowMarker__ as the last field (required by spec)
-  fields.__rowMarker__ = { type: 'INT32' };
+  fields.__rowMarker__ = { type: "INT32" };
 
   return new ParquetSchema(fields);
 }
-

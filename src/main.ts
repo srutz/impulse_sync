@@ -1,18 +1,16 @@
+import { exit } from "node:process";
+import { consola } from "consola";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { consola } from "consola";
-import { bootstrapConfig, showConfig } from "./config";
-import { runAllSyncs } from "./sync/run";
-import { initDatabasePool } from "./sync/db";
-import { exit } from "node:process";
-import { showSyncMarkers } from "./sync/syncmarkers";
 import { tableReset, tableShow } from "./commands";
-
+import { bootstrapConfig, showConfig } from "./config";
+import { initDatabasePool } from "./sync/db";
+import { runAllSyncs } from "./sync/run";
+import { showSyncMarkers } from "./sync/syncmarkers";
 
 consola.log("Impulse Sync CLI");
 consola.log("(C) 2025 Stepan Rutz, all rights reserved.");
 consola.log("");
-
 
 async function syncRun() {
   await bootstrapConfig();
@@ -44,7 +42,7 @@ async function main() {
           await syncRun();
           exit(0);
         }
-      }
+      },
     )
     .command(
       "show <action>",
@@ -62,7 +60,7 @@ async function main() {
         } else if (argv.action === "config") {
           await showConfig();
         }
-      }
+      },
     )
     .command(
       "table <action> [tableName]",
@@ -93,7 +91,7 @@ async function main() {
           }
           await tableShow(argv.tableName as string);
         }
-      }
+      },
     )
     .command(
       "workspaces <action>",
@@ -109,12 +107,11 @@ async function main() {
         if (argv.action === "list") {
           await workspacesList();
         }
-      }
+      },
     )
     .demandCommand(1, "You need to specify a command")
     .help()
     .parseAsync();
 }
 
-main()
-
+main();

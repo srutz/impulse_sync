@@ -1,17 +1,17 @@
-import { readFile, writeFile, mkdir, access } from "fs/promises";
-import { constants } from "fs";
 import { consola } from "consola";
+import { constants } from "fs";
+import { access, mkdir, readFile, writeFile } from "fs/promises";
 import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
 export type SyncTable = {
   tableKey: string;
   query: string;
-  enabled: boolean
+  enabled: boolean;
   syncType: "full" | "timestamp" | "primarykey";
   primaryKey?: string;
   timeStampColumn?: string;
   rowsPerSync?: number;
-}
+};
 
 export type Config = {
   postgres: {
@@ -20,18 +20,17 @@ export type Config = {
     user: string;
     password: string;
     database: string;
-  },
-  syncTables: SyncTable[]
-}
+  };
+  syncTables: SyncTable[];
+};
 
 export type SyncMarkers = {
-  changedTs: string
-  markers: Record<string, string>
-}
-
+  changedTs: string;
+  markers: Record<string, string>;
+};
 
 let config: Config | null = null;
-let syncMarkers: SyncMarkers | null = null;
+const syncMarkers: SyncMarkers | null = null;
 
 async function bootstrapConfig() {
   // Ensure directory exists
@@ -47,12 +46,18 @@ async function bootstrapConfig() {
         port: 5432,
         user: "postgres",
         password: "your_password",
-        database: "your_database"
+        database: "your_database",
       },
-      syncTables: []
+      syncTables: [],
     };
-    await writeFile(CONFIG_PATH, JSON.stringify(defaultConfig, null, 2), "utf-8");
-    consola.info(`Created default config at ${CONFIG_PATH}. Please update it with your settings.`);
+    await writeFile(
+      CONFIG_PATH,
+      JSON.stringify(defaultConfig, null, 2),
+      "utf-8",
+    );
+    consola.info(
+      `Created default config at ${CONFIG_PATH}. Please update it with your settings.`,
+    );
   }
 
   // Check and create sync_markers.json if it doesn't exist
@@ -61,9 +66,13 @@ async function bootstrapConfig() {
   } catch {
     const defaultMarkers: SyncMarkers = {
       changedTs: new Date().toISOString(),
-      markers: {}
+      markers: {},
     };
-    await writeFile(MARKERS_PATH, JSON.stringify(defaultMarkers, null, 2), "utf-8");
+    await writeFile(
+      MARKERS_PATH,
+      JSON.stringify(defaultMarkers, null, 2),
+      "utf-8",
+    );
     consola.info(`Created default sync markers at ${MARKERS_PATH}.`);
   }
   config = await loadConfig(CONFIG_PATH);
@@ -79,6 +88,5 @@ async function showConfig() {
   consola.info("Current Sync Table Configurations:");
   consola.info(JSON.stringify(content.syncTables, null, 2));
 }
-
 
 export { bootstrapConfig, config, loadConfig, showConfig };

@@ -9,12 +9,13 @@
     "check": "npx tsc --noEmit",
     "lint": "npx @biomejs/biome lint",
     "format": "npx @biomejs/biome format --write",
-    "fix": "npx @biomejs/check --write"
+    "fix": "npx @biomejs/biome check --write"
   },
   "author": "stepan rutz",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
     "@types/node": "^25.0.0",
     "@types/pg": "^8.16.0",
     "@types/pg-query-stream": "^1.0.3",

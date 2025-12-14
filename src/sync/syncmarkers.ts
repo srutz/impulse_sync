@@ -1,12 +1,11 @@
-import { readFile, writeFile, mkdir, access } from "fs/promises";
-import { MARKERS_PATH } from "../paths";
 import { consola } from "consola";
+import { access, mkdir, readFile, writeFile } from "fs/promises";
+import { MARKERS_PATH } from "../paths";
 
 export type SyncMarkers = {
-  changedTs: string
-  markers: Record<string, string>
-}
-
+  changedTs: string;
+  markers: Record<string, string>;
+};
 
 let syncMarkers: SyncMarkers | null = null;
 
@@ -17,7 +16,7 @@ async function loadSyncMarkers(path: string) {
       // File is empty, return default structureok
       return {
         changedTs: new Date().toISOString(),
-        markers: {}
+        markers: {},
       };
     }
     return JSON.parse(content) as SyncMarkers;
@@ -26,7 +25,7 @@ async function loadSyncMarkers(path: string) {
     consola.warn(`Could not load sync markers from ${path}, using defaults`);
     return {
       changedTs: new Date().toISOString(),
-      markers: {}
+      markers: {},
     };
   }
 }
