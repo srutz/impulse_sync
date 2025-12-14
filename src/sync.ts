@@ -48,13 +48,13 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
   let rowCount = 0;
 
   // Ensure landing zone directory exists
-  const tableLandingZone = join(FILES_DIR, table.tableKey);
-  await mkdir(tableLandingZone, { recursive: true });
+  const tableFilesDirectory = join(FILES_DIR, table.tableKey);
+  await mkdir(tableFilesDirectory, { recursive: true });
 
   // Get next file number
-  const nextFileNumber = await getNextFileNumber(tableLandingZone);
+  const nextFileNumber = await getNextFileNumber(tableFilesDirectory);
   const fileName = `${nextFileNumber.toString().padStart(20, '0')}.parquet`;
-  const filePath = join(tableLandingZone, fileName);
+  const filePath = join(tableFilesDirectory, fileName);
 
   //consola.info(`Writing to file: ${filePath}`);
 
@@ -180,11 +180,11 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
 }
 
 /**
- * Gets the next file number by reading existing files in the landing zone directory
+ * Gets the next file number by reading existing files in the local directory
  */
-async function getNextFileNumber(landingZoneDir: string): Promise<number> {
+async function getNextFileNumber(tableFilesDirectory: string) {
   try {
-    const files = await readdir(landingZoneDir);
+    const files = await readdir(tableFilesDirectory);
     const parquetFiles = files.filter(f => f.endsWith('.parquet'));
 
     if (parquetFiles.length === 0) {
@@ -200,7 +200,7 @@ async function getNextFileNumber(landingZoneDir: string): Promise<number> {
     const maxNumber = Math.max(...numbers);
     return maxNumber + 1;
   } catch (error) {
-    consola
+    consola.log(`Error reading directory ${tableFilesDirectory}: ${error}`);
     // Directory doesn't exist yet
     return 1;
   }
