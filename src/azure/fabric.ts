@@ -1,4 +1,5 @@
 import { AZURE_RESOURCE_FABRIC, getAccessToken } from "./accesstoken";
+import { getAzureState, setAzureState } from "./azurestate";
 
 export type Workspace = {
   id: string;
@@ -23,7 +24,24 @@ export async function getWorkspaces() {
   return data;
 }
 
-export async function getMirroredDatabases(workspaceId: string) {
+export async function setWorkspace(workspaceId: string) {
+  const state = await getAzureState();
+  state.workspaceId = workspaceId;
+  // Save the updated state
+  await setAzureState(state);
+}
+
+export async function getWorkspace() {
+  const state = await getAzureState();
+  return state.workspaceId;
+}
+
+export async function getMirroredDatabases() {
+  const state = await getAzureState();
+  const workspaceId = state.workspaceId;
+  if (!workspaceId) {
+    throw new Error("workspaceId is not set. Please set the workspace first.");
+  }
   const response = await fetch(
     `https://api.fabric.microsoft.com/v1/workspaces/${workspaceId}/mirroredDatabases`,
     {

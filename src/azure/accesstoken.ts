@@ -31,8 +31,11 @@ export async function getAccessToken(resource: string): Promise<string> {
 }
 
 async function fetchAccessTokenInternal(resource: string): Promise<string> {
-  const { stdout } = await execAsync(
+  const { stdout, stderr } = await execAsync(
     `az account get-access-token --resource ${resource} --query accessToken -o tsv`,
   );
+  if (stderr) {
+    throw new Error(`Failed to get access token: ${stderr}`);
+  }
   return stdout.trim();
 }

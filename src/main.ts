@@ -7,26 +7,28 @@ import { bootstrapConfig, showConfig } from "./config";
 import { initDatabasePool } from "./sync/db";
 import { runAllSyncs } from "./sync/run";
 import { showSyncMarkers } from "./sync/syncmarkers";
-
-consola.log("Impulse Sync CLI");
-consola.log("(C) 2025 Stepan Rutz, all rights reserved.");
-consola.log("");
+import { getMirroredDatabases, getWorkspace, getWorkspaces, setWorkspace } from "./azure/fabric";
 
 async function syncRun() {
   await bootstrapConfig();
   await initDatabasePool();
   consola.success("sync initialized successfully.");
-
   await runAllSyncs();
 }
 
-async function workspacesList() {
-  consola.info("Listing workspaces...");
-  // TODO: Implement workspaces list
-}
 
 async function main() {
   await yargs(hideBin(process.argv))
+    .command("about",
+      "Show about information",
+      () => { },
+      async () => {
+        consola.log("Impulse Sync - Azure Data Sync Tool");
+        consola.log("Version: 1.0.0");
+        consola.log("(c) Stepan Rutz 2025");
+        console.log("");
+      }
+    )
     .command(
       "sync <action>",
       "Sync data",
@@ -94,19 +96,33 @@ async function main() {
       },
     )
     .command(
-      "workspaces <action>",
+      "workspace <action> [workspaceId]",
       "Manage workspaces",
       (yargs) => {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: ["list"],
+          choices: ["list", "set", "get", "showmirroreddatabases"],
         });
       },
       async (argv) => {
         if (argv.action === "list") {
-          await workspacesList();
+          const workspaces = await getWorkspaces();
+          consola.log(JSON.stringify(workspaces, null, 2));
+        } else if (argv.action === "set") {
+          if (!argv.workspaceId) {
+            consola.error("workspaceId is required for setworkspace action");
+            exit(1);
+          }
+          setWorkspace(argv.workspaceId as string);
+        } else if (argv.action === "get") {
+          const workspaceId = await getWorkspace();
+          consola.log({ workspaceId });
+        } else if (argv.action === "showmirroreddatabases") {
+          const mirroredDatabases = await getMirroredDatabases();
+          consola.log(JSON.stringify(mirroredDatabases, null, 2));
         }
+
       },
     )
     .demandCommand(1, "You need to specify a command")
