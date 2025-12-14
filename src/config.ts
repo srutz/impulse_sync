@@ -1,6 +1,6 @@
 import { consola } from "consola";
-import { constants } from "fs";
-import { access, mkdir, readFile, writeFile } from "fs/promises";
+import { constants } from "node:fs";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
 export type SyncTable = {
@@ -30,7 +30,6 @@ export type SyncMarkers = {
 };
 
 let config: Config | null = null;
-const syncMarkers: SyncMarkers | null = null;
 
 async function bootstrapConfig() {
   // Ensure directory exists

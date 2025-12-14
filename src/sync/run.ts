@@ -1,10 +1,10 @@
 import { consola } from "consola";
-import { mkdir, readdir } from "fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { ParquetSchema, ParquetWriter } from "parquetjs";
-import { join } from "path";
+import { join } from "node:path";
 import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
-import { exit } from "process";
+import { exit } from "node:process";
 import { config, type SyncTable } from "../config";
 import { FILES_DIR } from "../paths";
 import { pool } from "./db";
@@ -20,12 +20,12 @@ export async function runAllSyncs() {
 
     for (const table of syncTables) {
       if (table.enabled) {
-        const t0 = new Date().getTime();
+        const t0 = Date.now();
         consola.info(`sync "${table.tableKey}"`);
         await syncSingleTable(client, table);
-        const t1 = new Date().getTime();
+        const t1 = Date.now();
         const dt = t1 - t0;
-        consola.success(`completed "${table.tableKey}" in ${t1 - t0}ms`);
+        consola.success(`completed "${table.tableKey}" in ${dt}ms`);
       } else {
         consola.info(`skip "${table.tableKey}"`);
       }

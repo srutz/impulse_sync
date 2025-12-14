@@ -1,5 +1,3 @@
-import { exec } from "child_process";
-import { promisify } from "util";
 import { AZURE_RESOURCE_FABRIC, getAccessToken } from "./accesstoken";
 
 export type Workspace = {
