@@ -57,7 +57,16 @@ async function bootstrapConfig() {
         password: "your_password",
         database: "your_database",
       },
-      syncTables: [],
+      "delaySecondsBetweenSyncs": 10,
+      "syncTables": [
+        {
+          "tableKey": "sales1",
+          "enabled": true,
+          "query": "select id, order_id, date, customer_name, product, category, modified_at from sales",
+          "syncType": "full",
+          "primaryKey": "id"
+        }
+      ]
     };
     await writeFile(
       CONFIG_PATH,
