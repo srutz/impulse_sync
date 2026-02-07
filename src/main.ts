@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /** biome-ignore-all lint/style/useTemplate: its ok */
 
 import { exit } from "node:process";
