@@ -55,7 +55,7 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: ["runloop", "onetime"],
+          choices: ["runloop", "onetime", "dryrun"],
         });
       },
       async (argv) => {
@@ -63,7 +63,7 @@ async function main() {
           await bootstrapConfig();
           await initDatabasePool();
           try {
-            await runSyncsOnce();
+            await runSyncsOnce(false);
             exit(0);
           } catch (error) {
             consola.error("Sync failed:", error);
@@ -73,9 +73,19 @@ async function main() {
           await bootstrapConfig();
           await initDatabasePool();
           try {
-            await runSyncLoop();
+            await runSyncLoop(false);
           } catch (error) {
             consola.error("Sync loop failed:", error);
+            exit(1);
+          }
+        } else if (argv.action === "dryrun") {
+          await bootstrapConfig();
+          await initDatabasePool();
+          try {
+            await runSyncsOnce(true);
+            exit(0);
+          } catch (error) {
+            consola.error("Dry run failed:", error);
             exit(1);
           }
         }

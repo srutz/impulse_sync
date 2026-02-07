@@ -16,11 +16,11 @@ import { FILES_DIR } from "../paths";
 import { pool } from "./db";
 import { getSyncMarker, setSyncMarker } from "./syncmarkers";
 
-export async function runSyncLoop() {
+export async function runSyncLoop(dryRun: boolean) {
   const delaySeconds = config!.delaySecondsBetweenSyncs || 300;
   while (true) {
     try {
-      await runSyncsOnce();
+      await runSyncsOnce(dryRun);
     } catch (error) {
       consola.error("Error during sync loop:", error);
     }
@@ -29,7 +29,7 @@ export async function runSyncLoop() {
   }
 }
 
-export async function runSyncsOnce() {
+export async function runSyncsOnce(dryRun: boolean) {
   consola.info("starting full sync...");
 
   const client = await pool!.connect();
@@ -41,7 +41,7 @@ export async function runSyncsOnce() {
       if (table.enabled) {
         const t0 = Date.now();
         consola.info(`sync "${table.tableKey}"`);
-        await syncSingleTable(client, table);
+        await syncSingleTable(client, table, dryRun);
         const t1 = Date.now();
         const dt = t1 - t0;
         consola.success(`completed "${table.tableKey}" in ${dt}ms`);
@@ -54,7 +54,7 @@ export async function runSyncsOnce() {
   }
 }
 
-async function syncSingleTable(client: PoolClient, table: SyncTable) {
+async function syncSingleTable(client: PoolClient, table: SyncTable, dryRun: boolean) {
   if (!table.enabled) {
     consola.info(`skipping disabled sync: "${table.tableKey}"`);
     return;
@@ -180,42 +180,47 @@ async function syncSingleTable(client: PoolClient, table: SyncTable) {
     }
   }
 
-  switch (table.syncType) {
-    case "timestamp":
-      if (rowCount > 0) {
-        const newMarker = maxTime.toISOString();
-        consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
-        await setSyncMarker(table.tableKey, newMarker);
-      }
-      break;
-    case "primarykey":
-      if (rowCount > 0) {
-        const newMarker = maxId.toString();
-        consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
-        await setSyncMarker(table.tableKey, newMarker);
-      }
-      break;
-    case "full":
-      /* no sync marker to update */
-      break;
-    default: {
-      const exhaustiveCheck: never = table.syncType;
-      throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
-    }
-  }
-
   if (success) {
-    // Ensure metadata file exists before uploading data
-    const hasMetadata = await metadataExists(table.tableKey);
-    if (!hasMetadata) {
-      consola.info(
-        `Creating _metadata.json for table ${table.tableKey} (first sync)`,
-      );
-      const keyColumns = getKeyColumns(table);
-      await createMetadataFile(table.tableKey, keyColumns);
-    }
+    if (dryRun) {
+      console.info("dry run - skipping upload and sync marker update");
+    } else {
+      // Ensure metadata file exists before uploading data
+      const hasMetadata = await metadataExists(table.tableKey);
+      if (!hasMetadata) {
+        consola.info(
+          `Creating _metadata.json for table ${table.tableKey} (first sync)`,
+        );
+        const keyColumns = getKeyColumns(table);
+        await createMetadataFile(table.tableKey, keyColumns);
+      }
 
-    await uploadTableFile(table.tableKey, filePath);
+      await uploadTableFile(table.tableKey, filePath);
+
+      // Update sync marker AFTER successful upload
+      switch (table.syncType) {
+        case "timestamp":
+          if (rowCount > 0) {
+            const newMarker = maxTime.toISOString();
+            consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
+            await setSyncMarker(table.tableKey, newMarker);
+          }
+          break;
+        case "primarykey":
+          if (rowCount > 0) {
+            const newMarker = maxId.toString();
+            consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
+            await setSyncMarker(table.tableKey, newMarker);
+          }
+          break;
+        case "full":
+          /* no sync marker to update */
+          break;
+        default: {
+          const exhaustiveCheck: never = table.syncType;
+          throw new Error(`Unhandled sync type: ${exhaustiveCheck}`);
+        }
+      }
+    }
   }
   //consola.info(`Table ${table.tableKey} synced, total rows: ${rowCount}`);
 }
