@@ -21,7 +21,7 @@ export type Config = {
     password: string;
     database: string;
   };
-  delaySecondsBetweenSyncs?: number;  // default is 300 seconds
+  delaySecondsBetweenSyncs?: number; // default is 300 seconds
   syncTables: SyncTable[];
 };
 
@@ -31,6 +31,15 @@ export type SyncMarkers = {
 };
 
 let config: Config | null = null;
+
+async function checkForExistingConfig() {
+  try {
+    await access(CONFIG_PATH, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function bootstrapConfig() {
   // Ensure directory exists
@@ -89,4 +98,10 @@ async function showConfig() {
   consola.info(JSON.stringify(content.syncTables, null, 2));
 }
 
-export { bootstrapConfig, config, loadConfig, showConfig };
+export {
+  checkForExistingConfig,
+  bootstrapConfig,
+  config,
+  loadConfig,
+  showConfig,
+};

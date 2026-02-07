@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/style/useTemplate: its ok */
+
 import { exit } from "node:process";
 import { consola } from "consola";
 import yargs from "yargs";
@@ -11,11 +13,11 @@ import {
   setWorkspace,
 } from "./azure/fabric";
 import { tableReset, tableShow } from "./commands";
-import { bootstrapConfig, showConfig } from "./config";
+import { bootstrapConfig, checkForExistingConfig, showConfig } from "./config";
+import { CONFIG_PATH } from "./paths";
 import { initDatabasePool } from "./sync/db";
 import { runSyncLoop, runSyncsOnce } from "./sync/run";
 import { showSyncMarkers } from "./sync/syncmarkers";
-
 
 async function main() {
   await yargs(hideBin(process.argv))
@@ -28,6 +30,22 @@ async function main() {
         consola.log("Version: 1.0.0");
         consola.log("(c) Stepan Rutz 2025");
         console.log("");
+      },
+    )
+    .command(
+      "newconfig",
+      "Create new config and marker files with default values",
+      () => { },
+      async () => {
+        // check for existing config and marker files and create them with default values if they don't exist
+        const existingConfig = await checkForExistingConfig();
+        if (existingConfig) {
+          consola.error("Config file already exists at " + CONFIG_PATH);
+          exit(1);
+        }
+        await bootstrapConfig();
+        consola.success("Config file created at " + CONFIG_PATH);
+        exit(0);
       },
     )
     .command(
@@ -119,11 +137,7 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: [
-            "list",
-            "set",
-            "get",
-          ],
+          choices: ["list", "set", "get"],
         });
       },
       async (argv) => {
@@ -169,11 +183,7 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: [
-            "list",
-            "set",
-            "get",
-          ],
+          choices: ["list", "set", "get"],
         });
       },
       async (argv) => {

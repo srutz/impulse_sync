@@ -1,4 +1,4 @@
-import { stat, readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 
 export async function isDirectory(path: string) {
   try {

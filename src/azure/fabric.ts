@@ -1,11 +1,11 @@
 import { consola } from "consola";
+import { readBinaryFile } from "../sync/util";
 import {
   AZURE_RESOURCE_FABRIC,
   AZURE_RESOURCE_STORAGE,
   getAccessToken,
 } from "./accesstoken";
 import { getAzureState, setAzureState } from "./azurestate";
-import { readBinaryFile } from "../sync/util";
 
 export type Workspace = {
   id: string;
@@ -87,11 +87,10 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
   const buffer = await readBinaryFile(filePath);
 
   // Extract filename from path
-  const filename = filePath.split('/').pop() || 'data.parquet';
+  const filename = filePath.split("/").pop() || "data.parquet";
   // OneLake DFS operations require a storage token, not a Fabric API token
   const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
   const baseUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/${filename}`;
-
 
   // do this a few times, since there could be timeouts for large files
   const attempts = 10;
@@ -114,17 +113,22 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
         );
       }
       // Step 2: Append data to the file
-      consola.info(`uploading ${buffer.length} bytes to ${tableKey}/${filename}`);
-      const appendResponse = await fetch(`${baseUrl}?action=append&position=0`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "x-ms-version": "2020-02-10",
-          "Content-Type": "application/octet-stream",
-          "Content-Length": buffer.length.toString(),
+      consola.info(
+        `uploading ${buffer.length} bytes to ${tableKey}/${filename}`,
+      );
+      const appendResponse = await fetch(
+        `${baseUrl}?action=append&position=0`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "x-ms-version": "2020-02-10",
+            "Content-Type": "application/octet-stream",
+            "Content-Length": buffer.length.toString(),
+          },
+          body: buffer,
         },
-        body: buffer,
-      });
+      );
       if (!appendResponse.ok) {
         throw new Error(
           `failed to append data: ${appendResponse.status} ${await appendResponse.text()}`,
@@ -153,7 +157,9 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
       break; // success, exit loop
     } catch (error) {
       if (attempt === attempts) {
-        throw new Error(`failed to upload file after ${attempts} attempts: ${error}`);
+        throw new Error(
+          `failed to upload file after ${attempts} attempts: ${error}`,
+        );
       }
       const delay = attempt * 2000; // exponential backoff
       consola.warn(`attempt ${attempt} failed, retrying in ${delay}ms...`);

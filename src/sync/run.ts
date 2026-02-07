@@ -25,9 +25,7 @@ export async function runSyncLoop() {
       consola.error("Error during sync loop:", error);
     }
     consola.info(`waiting ${delaySeconds} seconds before next sync...`);
-    await new Promise((resolve) =>
-      setTimeout(resolve, delaySeconds * 1_000)
-    );
+    await new Promise((resolve) => setTimeout(resolve, delaySeconds * 1_000));
   }
 }
 
@@ -278,9 +276,7 @@ function createSchemaFromRow(row: any): ParquetSchema {
 
 function getKeyColumns(table: SyncTable): string[] {
   if (!table.primaryKey) {
-    throw new Error(
-      `primaryKey is not defined for table ${table.tableKey}`,
-    );
+    throw new Error(`primaryKey is not defined for table ${table.tableKey}`);
   }
   return [table.primaryKey];
 }
