@@ -18,6 +18,7 @@ import { CONFIG_PATH } from "./paths";
 import { initDatabasePool } from "./sync/db";
 import { runSyncLoop, runSyncsOnce } from "./sync/run";
 import { showSyncMarkers } from "./sync/syncmarkers";
+import { dumpParquetFileAsCsv } from "./sync/util";
 
 async function main() {
   await yargs(hideBin(process.argv))
@@ -88,6 +89,27 @@ async function main() {
             consola.error("Dry run failed:", error);
             exit(1);
           }
+        }
+      },
+    )
+    .command(
+      "parquetdump <filename>",
+      "Dump a specific parquet file to console as csv for debugging",
+      (yargs) => {
+        return yargs.positional("filename", {
+          describe: "Name of the parquet file to dump",
+          type: "string",
+        });
+      },
+      async (argv) => {
+        const filePath = argv.filename as string;
+        try {
+          const csvData = await dumpParquetFileAsCsv(filePath);
+          console.log(csvData);
+          exit(0);
+        } catch (error) {
+          consola.error("Failed to dump parquet file:", error);
+          exit(1);
         }
       },
     )
