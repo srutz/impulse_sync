@@ -68,7 +68,12 @@ async function syncSingleTable(client: PoolClient, table: SyncTable, dryRun: boo
   await mkdir(tableFilesDirectory, { recursive: true });
 
   // Get next file number
-  const nextFileNumber = await getNextFileNumber(tableFilesDirectory);
+  let nextFileNumber = await getNextFileNumber(tableFilesDirectory);
+  if (table.singleFileMode) {
+    if (nextFileNumber > 1) {
+      nextFileNumber = nextFileNumber - 1; // overwrite last existing file in single file mode
+    }
+  }
   const fileName = `${nextFileNumber.toString().padStart(20, "0")}.parquet`;
   const filePath = join(tableFilesDirectory, fileName);
 
@@ -130,7 +135,7 @@ async function syncSingleTable(client: PoolClient, table: SyncTable, dryRun: boo
   try {
     const finalQuery = `select * from (${table.query}) AS a1 limit ${table.rowsPerSync || 100_000_000}`;
     const query = new QueryStream(finalQuery, params);
-    //consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
+    consola.info(`query for "${table.tableKey}": ${finalQuery}, ${params}`);
     const stream = client.query(query);
 
     for await (const row of stream) {

@@ -11,6 +11,7 @@ export type SyncTable = {
   primaryKey?: string;
   timeStampColumn?: string;
   rowsPerSync?: number;
+  singleFileMode?: boolean;
 };
 
 export type Config = {
