@@ -240,6 +240,17 @@ async function main() {
       },
     )
     .demandCommand(1, "You need to specify a command")
+    .strict()
+    .fail((msg, err, yargs) => {
+      if (err) {
+        consola.error(err);
+        exit(1);
+      }
+      consola.error(msg);
+      console.log("");
+      yargs.showHelp();
+      exit(1);
+    })
     .help()
     .parseAsync();
 }
