@@ -57,7 +57,7 @@ async function main() {
         return yargs.positional("action", {
           describe: "Action to perform",
           type: "string",
-          choices: ["runloop", "onetime", "dryrun"],
+          choices: ["runloop", "run", "dryrun"],
         });
       },
       async (argv) => {
@@ -185,27 +185,11 @@ async function main() {
           setWorkspace(argv.workspaceId as string);
         } else if (argv.action === "get") {
           const workspaceId = await getWorkspace();
+          if (!workspaceId) {
+            consola.warn("workspaceId is not set.");
+            exit(1);
+          }
           consola.log({ workspaceId });
-        } else if (argv.action === "listmirroreddatabases") {
-          const mirroredDatabases = await getMirroredDatabases();
-          consola.log(JSON.stringify(mirroredDatabases, null, 2));
-        } else if (argv.action === "setmirroreddatabase") {
-          if (!argv.workspaceId) {
-            consola.error(
-              "a set workspaceId is required for setmirroreddatabase action",
-            );
-            exit(1);
-          }
-          await setMirroredDatabase(argv.mirroredDatabase as string);
-        } else if (argv.action === "getmirroreddatabase") {
-          if (!argv.workspaceId) {
-            consola.error(
-              "a set workspaceId is required for getmirroreddatabase action",
-            );
-            exit(1);
-          }
-          const mirroredDatabase = await getMirroredDatabase();
-          consola.log({ mirroredDatabase });
         }
       },
     )
@@ -247,6 +231,10 @@ async function main() {
             exit(1);
           }
           const mirroredDatabase = await getMirroredDatabase();
+          if (!mirroredDatabase) {
+            consola.warn("mirroredDatabaseId is not set.");
+            exit(1);
+          }
           consola.log({ mirroredDatabase });
         }
       },

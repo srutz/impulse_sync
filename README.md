@@ -14,3 +14,75 @@ The config file contains all the necessary information for the project to run, i
 The directory .impulse_sync is also used to store the parquet files generated from the PostgreSQL data. These files are created based on the configurations specified in `config.json` and are subsequently uploaded to Azure storage.
 
 The .impulse_sync is searched for in the the home-directory of the user running the project. 
+
+## Setup for new Sync
+
+0. Unpack the project and navigate to the project directory in your terminal. Run
+
+```
+npx impulse-sync 
+```
+
+to see the available commands and options and verify that the project is set up correctly.
+
+1. Install nodejs and npm: https://nodejs.org/en/download/. Version 22 or higher is required.
+
+2. Install azure cli: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+
+3. Login into az with the azure cli: `az login` 
+  (You need to login into azure with an account that access permissions to the exact mirrored-dabase you want to sync)
+
+
+4. Create a config file in the .impulse_sync directory in your home directory. The config file should be named `config.json` and should contain the necessary configuration details for your sync. You can use the following template as a starting point:
+
+```
+npx impulse-sync newconfig
+``` 
+
+This will generate a new config file with the necessary fields. Fill in the details according to your specific requirements, such as database connection information, Azure storage account details, and any other relevant settings.
+
+
+5. List the available workspaces 
+
+```
+npx impulse-sync workspace list
+```
+
+6. Choose the workspace you want to use for the sync and set it as the active workspace:
+
+```
+npx impulse-sync workspace set <your-workspace-id>
+```
+
+7. List the available mirrored databases in the active workspace:
+
+```
+npx impulse-sync mirroreddatabase list
+```
+
+8. Choose the mirrored database you want to sync and set it as the active mirrored database:
+
+```
+npx impulse-sync mirroreddatabase set <your-mirrored-database-id>
+```
+
+9. Run the sync process to read data from PostgreSQL, package it into parquet files, and upload it to Azure:
+
+```
+npx impulse-sync sync run
+``` 
+
+You can also try the other options like running the sync in a loop with a specified interval (e.g., every hour):
+
+```
+npx impulse-sync sync runloop
+```
+
+The interval can be configured in the `config.json` file under the `delaySecondsBetweenSyncs` field.
+
+or to just create the parquet files without uploading to azure, you can run
+
+```
+npx impulse-sync sync dryrun
+``` 
+
