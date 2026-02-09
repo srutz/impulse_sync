@@ -2,7 +2,7 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { exit } from "node:process";
-import { consola } from "consola";
+import { consola } from "../logger";
 import { ParquetSchema, ParquetWriter } from "parquetjs";
 import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
@@ -54,7 +54,11 @@ export async function runSyncsOnce(dryRun: boolean) {
   }
 }
 
-async function syncSingleTable(client: PoolClient, table: SyncTable, dryRun: boolean) {
+async function syncSingleTable(
+  client: PoolClient,
+  table: SyncTable,
+  dryRun: boolean,
+) {
   if (!table.enabled) {
     consola.info(`skipping disabled sync: "${table.tableKey}"`);
     return;
@@ -206,14 +210,18 @@ async function syncSingleTable(client: PoolClient, table: SyncTable, dryRun: boo
         case "timestamp":
           if (rowCount > 0) {
             const newMarker = maxTime.toISOString();
-            consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
+            consola.info(
+              `new syncmarker for "${table.tableKey}" = ${newMarker}`,
+            );
             await setSyncMarker(table.tableKey, newMarker);
           }
           break;
         case "primarykey":
           if (rowCount > 0) {
             const newMarker = maxId.toString();
-            consola.info(`new syncmarker for "${table.tableKey}" = ${newMarker}`);
+            consola.info(
+              `new syncmarker for "${table.tableKey}" = ${newMarker}`,
+            );
             await setSyncMarker(table.tableKey, newMarker);
           }
           break;

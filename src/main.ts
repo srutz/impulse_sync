@@ -2,7 +2,7 @@
 /** biome-ignore-all lint/style/useTemplate: its ok */
 
 import { exit } from "node:process";
-import { consola } from "consola";
+import { consola } from "./logger";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import {
@@ -26,7 +26,7 @@ async function main() {
     .command(
       "about",
       "Show about information",
-      () => { },
+      () => {},
       async () => {
         consola.log("Impulse Sync - Azure Data Sync Tool");
         consola.log("Version: 1.0.0");
@@ -37,7 +37,7 @@ async function main() {
     .command(
       "newconfig",
       "Create new config and marker files with default values",
-      () => { },
+      () => {},
       async () => {
         // check for existing config and marker files and create them with default values if they don't exist
         const existingConfig = await checkForExistingConfig();

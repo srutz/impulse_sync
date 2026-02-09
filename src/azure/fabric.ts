@@ -1,4 +1,4 @@
-import { consola } from "consola";
+import { consola } from "../logger";
 import { readBinaryFile } from "../sync/util";
 import {
   AZURE_RESOURCE_FABRIC,

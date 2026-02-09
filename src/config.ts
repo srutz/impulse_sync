@@ -1,6 +1,6 @@
 import { constants } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import { consola } from "consola";
+import { consola } from "./logger";
 import { CONFIG_DIR, CONFIG_PATH, MARKERS_PATH } from "./paths";
 
 export type SyncTable = {
@@ -23,6 +23,7 @@ export type Config = {
     database: string;
   };
   delaySecondsBetweenSyncs?: number; // default is 300 seconds
+  logFilePath?: string; // optional path to log file for persistent logging
   syncTables: SyncTable[];
 };
 
@@ -58,16 +59,17 @@ async function bootstrapConfig() {
         password: "your_password",
         database: "your_database",
       },
-      "delaySecondsBetweenSyncs": 10,
-      "syncTables": [
+      delaySecondsBetweenSyncs: 10,
+      syncTables: [
         {
-          "tableKey": "sales1",
-          "enabled": true,
-          "query": "select id, order_id, date, customer_name, product, category, modified_at from sales",
-          "syncType": "full",
-          "primaryKey": "id"
-        }
-      ]
+          tableKey: "sales1",
+          enabled: true,
+          query:
+            "select id, order_id, date, customer_name, product, category, modified_at from sales",
+          syncType: "full",
+          primaryKey: "id",
+        },
+      ],
     };
     await writeFile(
       CONFIG_PATH,

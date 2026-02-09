@@ -39,37 +39,42 @@ export async function delay(ms: number) {
 
 export function quoteCsv(s: string, separator = ";") {
   if (!s) {
-    return s
+    return s;
   }
-  let simpleQuotes = false
-  let fromScratch = false
+  let simpleQuotes = false;
+  let fromScratch = false;
   for (let i = 0, n = s.length; i < n; ++i) {
-    const c = s.charAt(i)
+    const c = s.charAt(i);
     if (c === '"') {
-      fromScratch = true
-    } else if (c === separator || c === '\r' || c === '\n') {
-      simpleQuotes = true
+      fromScratch = true;
+    } else if (c === separator || c === "\r" || c === "\n") {
+      simpleQuotes = true;
     }
   }
   if (fromScratch) {
-    let r = '"'
+    let r = '"';
     for (let i = 0, n = s.length; i < n; ++i) {
-      const c = s.charAt(i)
-      r += c === '"' ? '""' : c
+      const c = s.charAt(i);
+      r += c === '"' ? '""' : c;
     }
-    r += '"'
-    s = r
+    r += '"';
+    s = r;
   } else if (simpleQuotes) {
-    s = '"' + s + '"'
+    s = '"' + s + '"';
   }
-  return s
+  return s;
 }
 
-export function writeCsv(parquetResults: { headers: string[]; records: RowInterface[] }, separator = ";") {
+export function writeCsv(
+  parquetResults: { headers: string[]; records: RowInterface[] },
+  separator = ";",
+) {
   const { headers, records } = parquetResults;
   let csv = headers.map((h) => quoteCsv(h, separator)).join(separator) + "\n";
   for (const record of records) {
-    const row = headers.map((h) => quoteCsv(String(record[h] ?? ""), separator)).join(separator);
+    const row = headers
+      .map((h) => quoteCsv(String(record[h] ?? ""), separator))
+      .join(separator);
     csv += row + "\n";
   }
   return csv;

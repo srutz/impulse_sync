@@ -1,6 +1,6 @@
 import { readdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
-import { consola } from "consola";
+import { consola } from "./logger";
 import { loadConfig } from "./config";
 import { CONFIG_PATH, FILES_DIR } from "./paths";
 import { getSyncMarker, setSyncMarker } from "./sync/syncmarkers";
