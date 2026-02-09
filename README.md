@@ -3,8 +3,15 @@
 
 Impulse Sync is reads data from PostgreSQL, packages it into parquet files, and uploads it to azure.
 
+## Usage (in a nutshell)
 
-## Usage
+```
+npx impulse-sync
+```
+
+(Install node.js before you use it)
+
+## Usage-Details
 
 The project is centered around a config file residing in the directory .impulse_sync called 
 `config.json`. The location is fixed and the file must be named `config.json`. 
