@@ -12,25 +12,32 @@ fi
 
 # Create distribution directory
 DIST_DIR="impulse-sync-distribution"
+PACKAGE_DIR="impulse-sync"
 rm -rf "$DIST_DIR"
-mkdir -p "$DIST_DIR"
+mkdir -p "$DIST_DIR/$PACKAGE_DIR"
 
 echo "Copying files..."
-cp package.json "$DIST_DIR/"
-cp README.md "$DIST_DIR/"
-cp DISTRIBUTION.md "$DIST_DIR/"
-cp -r dist "$DIST_DIR/"
+cp package.json "$DIST_DIR/$PACKAGE_DIR/"
+cp README.md "$DIST_DIR/$PACKAGE_DIR/"
+cp DISTRIBUTION.md "$DIST_DIR/$PACKAGE_DIR/"
+cp -r dist "$DIST_DIR/$PACKAGE_DIR/"
 
 # Copy package-lock.json if it exists
 if [ -f package-lock.json ]; then
-    cp package-lock.json "$DIST_DIR/"
+    cp package-lock.json "$DIST_DIR/$PACKAGE_DIR/"
 fi
+
+# Install production dependencies
+echo "Installing production dependencies..."
+cd "$DIST_DIR/$PACKAGE_DIR"
+npm install --omit=dev
+cd ../..
 
 # Create zip file
 ZIP_NAME="impulse-sync-v$(node -p "require('./package.json').version")-win.zip"
 echo "Creating zip: $ZIP_NAME"
 cd "$DIST_DIR"
-zip -r "../$ZIP_NAME" ./*
+zip -r "../$ZIP_NAME" "$PACKAGE_DIR"
 cd ..
 
 echo "Distribution package created: $ZIP_NAME"
