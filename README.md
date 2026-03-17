@@ -5,7 +5,7 @@ Impulse Sync is a Microsoft-Fabric Open-Mirroring-Client and reads data from Pos
 
 ## Disclaimer
 
-This project comes with no warranty. Use at your own risk.
+This project is absolutely free to use, even commercially. This project comes with no warranty. Use at your own risk.
 
 
 ## Usage (in a nutshell)
