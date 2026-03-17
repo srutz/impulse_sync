@@ -3,6 +3,11 @@
  
 Impulse Sync is a Microsoft-Fabric Open-Mirroring-Client and reads data from PostgreSQL, packages it into parquet files, and uploads it to azure.
 
+## Disclaimer
+
+This project comes with no warranty. Use at your own risk.
+
+
 ## Usage (in a nutshell)
 
 ```
