@@ -31,7 +31,7 @@ async function main() {
       async () => {
         consola.log("Impulse Sync - Azure Data Sync Tool");
         consola.log("Version: 1.0.0");
-        consola.log("(c) Stepan Rutz 2025");
+        consola.log("(c) Stepan Rutz 2025-2026");
         console.log("");
       },
     )

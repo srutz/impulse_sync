@@ -20,6 +20,8 @@ echo "Copying files..."
 cp package.json "$DIST_DIR/$PACKAGE_DIR/"
 cp README.md "$DIST_DIR/$PACKAGE_DIR/"
 cp DISTRIBUTION.md "$DIST_DIR/$PACKAGE_DIR/"
+cp impulse-sync.sh "$DIST_DIR/$PACKAGE_DIR/"
+cp impulse-sync.bat "$DIST_DIR/$PACKAGE_DIR/"
 cp -r dist "$DIST_DIR/$PACKAGE_DIR/"
 
 # Copy package-lock.json if it exists
@@ -34,7 +36,7 @@ npm install --omit=dev
 cd ../..
 
 # Create zip file
-ZIP_NAME="impulse-sync-v$(node -p "require('./package.json').version")-win.zip"
+ZIP_NAME="impulse-sync-v$(node -p "require('./package.json').version").zip"
 echo "Creating zip: $ZIP_NAME"
 cd "$DIST_DIR"
 zip -r "../$ZIP_NAME" "$PACKAGE_DIR"
