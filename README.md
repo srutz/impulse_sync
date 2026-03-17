@@ -1,7 +1,7 @@
 
-# Impulse Sync
-
-Impulse Sync is a FABRIC Open-Mirroring Client and reads data from PostgreSQL, packages it into parquet files, and uploads it to azure.
+# Impulse Sync - Fabric Open-Mirroring-Client
+ 
+Impulse Sync is a Microsoft-Fabric Open-Mirroring-Client and reads data from PostgreSQL, packages it into parquet files, and uploads it to azure.
 
 ## Usage (in a nutshell)
 
