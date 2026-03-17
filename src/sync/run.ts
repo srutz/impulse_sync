@@ -8,6 +8,7 @@ import type { PoolClient } from "pg";
 import QueryStream from "pg-query-stream";
 import {
   createMetadataFile,
+  hasUnprocessedFiles,
   metadataExists,
   uploadTableFile,
 } from "../azure/fabric";
@@ -201,6 +202,29 @@ async function syncSingleTable(
         );
         const keyColumns = getKeyColumns(table);
         await createMetadataFile(table.tableKey, keyColumns);
+      } else {
+        // Wait for previous files to be processed before uploading new ones
+        // This prevents overwhelming Fabric's processing engine (skip on first sync)
+        const maxWaitMinutes = 10;
+        const checkIntervalSeconds = 30;
+        const maxChecks = (maxWaitMinutes * 60) / checkIntervalSeconds;
+
+        let checksPerformed = 0;
+        while (await hasUnprocessedFiles(table.tableKey)) {
+          checksPerformed++;
+          if (checksPerformed >= maxChecks) {
+            consola.warn(
+              `Warning: Unprocessed files still present after ${maxWaitMinutes} minutes for ${table.tableKey}. Proceeding with upload anyway.`,
+            );
+            break;
+          }
+          consola.info(
+            `Waiting for previous files to be processed (${checksPerformed}/${maxChecks})...`,
+          );
+          await new Promise(
+            (resolve) => setTimeout(resolve, checkIntervalSeconds * 1000),
+          );
+        }
       }
 
       await uploadTableFile(table.tableKey, filePath);

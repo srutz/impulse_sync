@@ -192,6 +192,12 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
       }
       consola.success("File flushed (finalized) successfully");
 
+      // Add a small delay after flush to ensure Fabric can detect the file
+      // This helps prevent race conditions where files are uploaded faster than
+      // Fabric's landing zone scanner can process them
+      consola.info("Waiting 2 seconds to ensure Fabric detects the file...");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       consola.success(`Upload completed successfully on attempt ${attempt}`);
       break; // success, exit loop
     } catch (error) {
@@ -324,4 +330,65 @@ export async function createMetadataFile(
   consola.success(
     `Created _metadata.json for ${tableKey} with keyColumns: ${keyColumns.join(", ")}`,
   );
+}
+
+/**
+ * Checks if there are unprocessed files in the landing zone for a table.
+ * Files that have been processed are moved to the readyToDelete subfolder.
+ * @returns true if there are files that haven't been processed yet
+ */
+export async function hasUnprocessedFiles(tableKey: string): Promise<boolean> {
+  const state = await getAzureState();
+  const workspaceId = state.workspaceId;
+  const mirroredDatabaseId = state.mirroredDatabaseId;
+  if (!workspaceId || !mirroredDatabaseId) {
+    throw new Error(
+      "workspaceId or mirroredDatabaseId is not set. Please set them first.",
+    );
+  }
+
+  const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
+  const listUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}?resource=filesystem&directory=Files/LandingZone/${tableKey}&recursive=false`;
+
+  try {
+    const response = await fetch(listUrl, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-ms-version": "2020-02-10",
+      },
+    });
+
+    // 404 means the directory doesn't exist yet (first sync) - that's OK, no unprocessed files
+    if (response.status === 404) {
+      return false;
+    }
+
+    if (!response.ok) {
+      consola.warn(`Could not list files in landing zone for ${tableKey}: ${response.status} ${await response.text()}`);
+      return false; // assume no unprocessed files if we can't check
+    }
+
+    const data = await response.text();
+    // Response is newline-delimited JSON
+    const paths = data
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => JSON.parse(line));
+
+    // Count parquet files that are NOT in readyToDelete subfolder
+    const unprocessedFiles = paths.filter((entry: { name?: string }) => {
+      const name = entry.name || '';
+      return name.endsWith('.parquet') && !name.includes('readyToDelete');
+    });
+
+    if (unprocessedFiles.length > 0) {
+      consola.info(`Found ${unprocessedFiles.length} unprocessed file(s) in landing zone for ${tableKey}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    consola.warn(`Error checking for unprocessed files in ${tableKey}:`, error);
+    return false; // assume no unprocessed files if we can't check
+  }
 }
