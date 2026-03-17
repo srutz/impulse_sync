@@ -11,6 +11,17 @@ npx impulse-sync
 
 (Install node.js before you use it)
 
+
+## Credits
+
+Thanks to [daten-wg.com](https://www.daten-wg.com/) for their expertise in Microsoft Fabric and for accompanying help on this project. 
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This means you are **free to use, modify, and distribute the software** as long as you include the original copyright notice and license in any copies or substantial portions of the software. The software is provided "as is", without any warranty of any kind. For more details, please refer to the LICENSE file.
+
+
 ## Usage-Details
 
 The project is centered around a config file residing in the directory .impulse_sync called 
@@ -25,6 +36,12 @@ The .impulse_sync is searched for in the the home-directory of the user running 
 ## Setup for new Sync
 
 0. Unpack the project and navigate to the project directory in your terminal. Run
+
+```
+npm install
+```
+
+for installing the necessary dependencies. This needs to be done only once. After that, you can run
 
 ```
 npx impulse-sync 
@@ -92,4 +109,3 @@ or to just create the parquet files without uploading to azure, you can run
 ```
 npx impulse-sync sync dryrun
 ``` 
-

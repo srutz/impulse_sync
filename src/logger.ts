@@ -6,6 +6,7 @@ let logFilePath: string | null = null;
 
 export function initLogger(config: Config) {
   logFilePath = config.logFilePath || null;
+  consola_.info("Logger initialized. Log file path:", logFilePath);
   if (logFilePath) {
     consola_.info(`Logging to file: ${logFilePath}`);
   }

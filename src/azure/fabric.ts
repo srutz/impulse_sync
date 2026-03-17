@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import { consola } from "../logger";
 import { readBinaryFile } from "../sync/util";
 import {
@@ -75,29 +76,45 @@ export async function getMirroredDatabase() {
 }
 
 export async function uploadTableFile(tableKey: string, filePath: string) {
+  consola.info(`Starting upload: table=${tableKey}, file=${filePath}`);
+
   const state = await getAzureState();
   const workspaceId = state.workspaceId;
   const mirroredDatabaseId = state.mirroredDatabaseId;
+
+  consola.info(`Workspace ID: ${workspaceId}`);
+  consola.info(`Mirrored Database ID: ${mirroredDatabaseId}`);
+
   if (!workspaceId || !mirroredDatabaseId) {
     throw new Error(
       "workspaceId or mirroredDatabaseId is not set. Please set them first.",
     );
   }
-  // read file into binary buffer
-  const buffer = await readBinaryFile(filePath);
 
-  // Extract filename from path
-  const filename = filePath.split("/").pop() || "data.parquet";
+  // read file into binary buffer
+  consola.info(`Reading file: ${filePath}`);
+  const buffer = await readBinaryFile(filePath);
+  consola.info(`File read successfully: ${buffer.length} bytes`);
+
+  // Extract filename from path (works on both Unix and Windows)
+  const filename = path.basename(filePath);
+  consola.info(`Filename extracted: ${filename}`);
+
   // OneLake DFS operations require a storage token, not a Fabric API token
+  consola.info("Acquiring Azure Storage access token...");
   const accessToken = await getAccessToken(AZURE_RESOURCE_STORAGE);
+  consola.info("Access token acquired successfully");
+
   const baseUrl = `https://onelake.dfs.fabric.microsoft.com/${workspaceId}/${mirroredDatabaseId}/Files/LandingZone/${tableKey}/${filename}`;
+  consola.info(`Target URL: ${baseUrl}`);
 
   // do this a few times, since there could be timeouts for large files
   const attempts = 10;
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    consola.info(`Upload attempt ${attempt}/${attempts}`);
     try {
       // Step 1: Create the file path
-      //consola.info(`creating file path for ${tableKey}/${filename}`);
+      consola.info(`Step 1: Creating file path for ${tableKey}/${filename}`);
       const createResponse = await fetch(`${baseUrl}?resource=file`, {
         method: "PUT",
         headers: {
@@ -107,14 +124,21 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
         },
       });
 
+      consola.info(`Create response: ${createResponse.status} ${createResponse.statusText}`);
       if (!createResponse.ok) {
+        const errorText = await createResponse.text();
+        consola.error(`Create file failed with status ${createResponse.status}`);
+        consola.error(`Response headers: ${JSON.stringify(Object.fromEntries(createResponse.headers))}`);
+        consola.error(`Response body: ${errorText}`);
         throw new Error(
-          `failed to create file: ${createResponse.status} ${await createResponse.text()}`,
+          `failed to create file: ${createResponse.status} ${errorText}`,
         );
       }
+      consola.success("File path created successfully");
+
       // Step 2: Append data to the file
       consola.info(
-        `uploading ${buffer.length} bytes to ${tableKey}/${filename}`,
+        `Step 2: Uploading ${buffer.length} bytes to ${tableKey}/${filename}`,
       );
       const appendResponse = await fetch(
         `${baseUrl}?action=append&position=0`,
@@ -129,13 +153,21 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
           body: buffer,
         },
       );
+
+      consola.info(`Append response: ${appendResponse.status} ${appendResponse.statusText}`);
       if (!appendResponse.ok) {
+        const errorText = await appendResponse.text();
+        consola.error(`Append data failed with status ${appendResponse.status}`);
+        consola.error(`Response headers: ${JSON.stringify(Object.fromEntries(appendResponse.headers))}`);
+        consola.error(`Response body: ${errorText}`);
         throw new Error(
-          `failed to append data: ${appendResponse.status} ${await appendResponse.text()}`,
+          `failed to append data: ${appendResponse.status} ${errorText}`,
         );
       }
+      consola.success(`Data appended successfully: ${buffer.length} bytes`);
+
       // Step 3: Flush the file (finalize)
-      //consola.info(`finalizing upload for ${tableKey}/${filename}`);
+      consola.info(`Step 3: Finalizing upload for ${tableKey}/${filename}`);
       const flushResponse = await fetch(
         `${baseUrl}?action=flush&position=${buffer.length}`,
         {
@@ -148,25 +180,35 @@ export async function uploadTableFile(tableKey: string, filePath: string) {
         },
       );
 
+      consola.info(`Flush response: ${flushResponse.status} ${flushResponse.statusText}`);
       if (!flushResponse.ok) {
+        const errorText = await flushResponse.text();
+        consola.error(`Flush file failed with status ${flushResponse.status}`);
+        consola.error(`Response headers: ${JSON.stringify(Object.fromEntries(flushResponse.headers))}`);
+        consola.error(`Response body: ${errorText}`);
         throw new Error(
-          `Failed to flush file: ${flushResponse.status} ${await flushResponse.text()}`,
+          `Failed to flush file: ${flushResponse.status} ${errorText}`,
         );
       }
+      consola.success("File flushed (finalized) successfully");
 
+      consola.success(`Upload completed successfully on attempt ${attempt}`);
       break; // success, exit loop
     } catch (error) {
+      consola.error(`Attempt ${attempt} failed:`, error);
       if (attempt === attempts) {
+        consola.error(`All ${attempts} attempts exhausted. Upload failed.`);
         throw new Error(
           `failed to upload file after ${attempts} attempts: ${error}`,
         );
       }
       const delay = attempt * 2000; // exponential backoff
-      consola.warn(`attempt ${attempt} failed, retrying in ${delay}ms...`);
+      consola.warn(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
+      consola.warn(`Error details: ${error}`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  consola.success(`uploaded ${filename} to ${tableKey}`);
+  consola.success(`✓ Upload complete: ${filename} to ${tableKey}`);
 }
 
 /**

@@ -30,7 +30,7 @@ export async function runSyncLoop(dryRun: boolean) {
 }
 
 export async function runSyncsOnce(dryRun: boolean) {
-  consola.info("starting full sync...");
+  consola.info("starting full sync:");
 
   const client = await pool!.connect();
   try {
